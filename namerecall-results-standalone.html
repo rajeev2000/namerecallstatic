@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NameRecall Challenge</title>
+    <link rel="icon" type="image/jpeg" href="namerecall.jpeg">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gray-200 font-sans antialiased flex flex-col">
+    <div id="root" class="flex-grow flex flex-col"></div>
+
+    <script type="text/javascript">
+        // Global React and ReactDOM are now available from the CDN scripts
+        const { useState, useEffect, createContext, useContext, useCallback } = React;
+        const ReactDOM = window.ReactDOM;
+
+        // --- Data Simulation ---
+        const PEOPLE_DATA = [
+          { id: 1, name: 'Alice', imageUrl: 'https://api.lorem.space/image/face?w=100&h=100&r=1' },
+          { id: 2, name: 'Bob', imageUrl: 'https://api.lorem.space/image/face?w=100&h=100&r=2' },
+          { id: 3, name: 'Charlie', imageUrl: 'https://api.lorem.space/image/face?w=100&h=100&r=3' },
+          { id: 4, name: 'Diana', imageUrl: 'https://api.lorem.space/image/face?w=100&h=100&r=4' },
+          { id: 5, name: 'Eve', imageUrl: 'https://api.lorem.space/image/face?w=100&h=100&r=5' },
+          { id: 6, name: 'Frank', imageUrl: 'https://api.lorem.space/image/face?w=100&h=100&r=6' },
+          { id: 7, name: 'Grace', imageUrl: 'https://api.lorem.space/image/face?w=100&h=100&r=7' },
+          { id: 8, name: 'Heidi', imageUrl: 'https://api.lorem.space/image/face?w=100&h=100&r=8' },
+          { id: 9, name: 'Ivan', imageUrl: 'https://api.lorem.space/image/face?w=100&h=100&r=9' },
+          { id: 10, name: 'Judy', imageUrl: 'https://api.lorem.space/image/face?w=100&h=100&r=10' },
+          { id: 11, name: 'Kevin', imageUrl: 'https://api.lorem.space/image/face?w=100&h=100&r=11' },
+          { id: 12, name: 'Linda', imageUrl: 'https://api.lorem.space/image/face?w=100&h=100&r=12' },
+          { id: 13, name: 'Mike', imageUrl: 'https://api.lorem.space/image/face?w=100&h=100&r=13' },
+          { id: 14, name: 'Nora', imageUrl: 'https://api.lorem.space/image/face?w=100&h=100&r=14' },
+          { id: 15, name: 'Oscar', imageUrl: 'https://api.lorem.space/image/face?w=100&h=100&r=15' },
+        ];
+
+        const LEVELS = [
+          { id: 'level-4', name: '4 Names', numberOfNames: 4, presentationTime: 2000, recallTime: 30, detailHint: false },
+          { id: 'level-5', name: '5 Names', numberOfNames: 5, presentationTime: 1800, recallTime: 35, detailHint: false },
+          { id: 'level-6', name: '6 Names', presentationTime: 1600, recallTime: 40, detailHint: true, hintText: 'Hobby: ' },
+          { id: 'level-7', name: '7 Names', presentationTime: 1400, recallTime: 45, detailHint: true, hintText: 'Job: ' },
+          { id: 'level-8', name: '8 Names', presentationTime: 1200, recallTime: 50, detailHint: true, hintText: 'City: ' },
+          { id: 'level-9', name: '9 Names', presentationTime: 1000, recallTime: 55, detailHint: true, hintText: 'Fact: ' },
+          { id: 'level-10', name: '10 Names', presentationTime: 800, recallTime: 60, detailHint: true, hintText: 'Detail: ' },
+        ];
+
+        const PERSON_DETAILS = {
+          Alice: 'Reading', Bob: 'Hiking', Charlie: 'Cooking', Diana: 'Painting', Eve: 'Gardening',
+          Frank: 'Coding', Grace: 'Singing', Heidi: 'Dancing', Ivan: 'Gaming', Judy: 'Traveling',
+          Kevin: 'Architect', Linda: 'Doctor', Mike: 'Teacher', Nora: 'Engineer', Oscar: 'Artist'
+        };
+
+        // --- Auth Context and Provider ---
+        const AuthContext = createContext();
+
+        const simpleHash = (str) => {
+          let hash = 0;
+          for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash |= 0; // Convert to 32bit integer
+          }
+          return hash.toString();
+        };
+
+        const AuthProvider = ({ children }) => {
+          const [userEmail, setUserEmail] = useState(null);
+          const [usersDb, setUsersDb] = useState(() => {
+            const savedDb = localStorage.getItem('simulated_users_db');
+            return savedDb ? JSON.parse(savedDb) : {};
+          });
+
+          useEffect(() => {
+            localStorage.setItem('simulated_users_db', JSON.stringify(usersDb));
+          }, [usersDb]);
+
+          const registerOrLoginUser = (email, otp) => {
+            const normalizedEmail = email.toLowerCase().trim();
+            const currentUserData = usersDb[normalizedEmail];
+
+            if (currentUserData && currentUserData.otp === otp) {
+              // Create a new object for updatedUsersDb to avoid spread syntax
+              const updatedUsersDb = {};
+              for (var key in usersDb) {
+                  if (usersDb.hasOwnProperty(key)) {
+                      updatedUsersDb[key] = usersDb[key];
+                  }
+              }
+              // Create a new object for currentUserData to avoid spread syntax
+              var newUserData = {};
+              for (var prop in currentUserData) {
+                  if (currentUserData.hasOwnProperty(prop)) {
+                      newUserData[prop] = currentUserData[prop];
+                  }
+              }
+              newUserData.verified = true;
+              newUserData.loggedIn = true;
+              updatedUsersDb[normalizedEmail] = newUserData;
+
+              setUsersDb(updatedUsersDb);
+              setUserEmail(normalizedEmail);
+              return { success: true, message: "Login successful!" };
+            } else if (currentUserData && currentUserData.otp !== otp) {
+              return { success: false, message: "Invalid OTP." };
+            } else {
+              return { success: false, message: "User not found or OTP not sent." };
+            }
+          };
+
+          const sendOtp = (email) => {
+            const normalizedEmail = email.toLowerCase().trim();
+            const generatedOtp = '9999'; // Fixed OTP as requested
+
+            // Create a new object for updatedUsersDb to avoid spread syntax
+            const updatedUsersDb = {};
+            for (var key in usersDb) {
+                if (usersDb.hasOwnProperty(key)) {
+                    updatedUsersDb[key] = usersDb[key];
+                }
+            }
+            updatedUsersDb[normalizedEmail] = {
+              email: normalizedEmail,
+              otp: generatedOtp,
+              verified: false,
+              loggedIn: false,
+              passwordHash: simpleHash(normalizedEmail + 'some_secret_salt'),
+            };
+            setUsersDb(updatedUsersDb);
+
+            console.log(`Simulated OTP for ${normalizedEmail}: ${generatedOtp}`);
+            return { success: true, message: `OTP sent to ${normalizedEmail}. Check console for OTP.` };
+          };
+
+          const logout = () => {
+            setUserEmail(null);
+            setUsersDb(prevDb => {
+              const newDb = {};
+              for (var key in prevDb) {
+                  if (prevDb.hasOwnProperty(key)) {
+                      newDb[key] = prevDb[key];
+                  }
+              }
+              if (userEmail && newDb[userEmail]) {
+                var userCopy = {};
+                for (var prop in newDb[userEmail]) {
+                    if (newDb[userEmail].hasOwnProperty(prop)) {
+                        userCopy[prop] = newDb[userEmail][prop];
+                    }
+                }
+                delete userCopy.otp;
+                userCopy.loggedIn = false;
+                newDb[userEmail] = userCopy;
+              }
+              return newDb;
+            });
+          };
+
+          return React.createElement(
+            AuthContext.Provider,
+            { value: { userEmail, usersDb, registerOrLoginUser, sendOtp, logout } },
+            children
+          );
+        };
+
+        // --- Main App Context and Provider ---
+        const AppContext = createContext();
+
+        const AppProvider = ({ children }) => {
+          const { userEmail } = useContext(AuthContext);
+          const [currentPage, setCurrentPage] = useState('home');
+          const currentUser = userEmail ? { id: userEmail, name: userEmail.split('@')[0] } : { id: 'guest', name: 'Guest' };
+
+          const [userProgress, setUserProgress] = useState(() => {
+            const savedProgress = localStorage.getItem(`nameRecallProgress_${currentUser.id}`);
+            return savedProgress ? JSON.parse(savedProgress) : {};
+          });
+
+          useEffect(() => {
+            localStorage.setItem(`nameRecallProgress_${currentUser.id}`, JSON.stringify(userProgress));
+          }, [userProgress, currentUser.id]);
+
+          const navigateTo = useCallback((page, data = null) => {
+            setCurrentPage(page);
+            if (data) {
+              setCurrentGameData(data);
+            } else {
+              setCurrentGameData(null);
+            }
+          }, []);
+
+          const [currentGameData, setCurrentGameData] = useState(null);
+
+          const updateProgress = useCallback((levelId, score, totalNames, timeTaken) => {
+            setUserProgress(prevProgress => {
+              const currentLevelProgress = prevProgress[levelId] || {
+                bestScore: 0,
+                bestTime: Infinity,
+                attempts: 0,
+                lastPlayedAt: null,
+                totalScore: 0,
+                completed: false,
+              };
+
+              // Create a new object for newProgress to avoid spread syntax
+              const newProgress = {};
+              for (var key in prevProgress) {
+                  if (prevProgress.hasOwnProperty(key)) {
+                      newProgress[key] = prevProgress[key];
+                  }
+              }
+
+              newProgress[levelId] = {
+                bestScore: newBestScore,
+                bestTime: newBestTime,
+                attempts: newAttempts,
+                lastPlayedAt: new Date().toISOString(),
+                totalScore: newTotalScore,
+                completed: currentLevelProgress.completed || completed,
+              };
+              return newProgress;
+            });
+          }, []);
+
+          return React.createElement(
+            AppContext.Provider,
+            { value: { currentPage, navigateTo, currentUser, userProgress, updateProgress, currentGameData } },
+            children
+          );
+        };
+
+        // --- Components ---
+
+        const AuthForm = () => {
+          const { userEmail, registerOrLoginUser, sendOtp, logout } = useContext(AuthContext);
+          const { navigateTo } = useContext(AppContext);
+          const [email, setEmail] = useState('');
+          const [otp, setOtp] = useState('');
+          const [message, setMessage] = useState('');
+          const [showOtpField, setShowOtpField] = useState(false);
+
+          const handleSendOtp = async (e) => {
+            e.preventDefault();
+            if (!email) {
+              setMessage("Please enter your email.");
+              return;
+            }
+            setMessage("Sending OTP...");
+            const response = sendOtp(email);
+            setMessage(response.message);
+            if (response.success) {
+              setShowOtpField(true);
+            }
+          };
+
+          const handleVerifyOtp = async (e) => {
+            e.preventDefault();
+            if (!email || !otp) {
+              setMessage("Please enter both email and OTP.");
+              return;
+            }
+            setMessage("Verifying OTP...");
+            const response = registerOrLoginUser(email, otp);
+            setMessage(response.message);
+            if (response.success) {
+              console.log("User successfully authenticated:", email);
+              setMessage(response.message + " Redirecting to Home...");
+              setTimeout(() => navigateTo('home'), 1500);
+            }
+          };
+
+          return React.createElement(
+            'div',
+            { className: 'flex items-center justify-center min-h-screen bg-gray-100 p-4' },
+            React.createElement(
+              'div',
+              { className: 'bg-white p-8 rounded-lg shadow-xl w-full max-w-md' },
+              React.createElement('h2', { className: 'text-3xl font-bold text-center text-blue-700 mb-6' }, 'Sign In / Register'),
+              userEmail ? (
+                React.createElement(
+                  'div',
+                  { className: 'text-center' },
+                  React.createElement('p', { className: 'text-xl text-green-600 mb-4' }, 'You are logged in as ', React.createElement('span', { className: 'font-semibold' }, userEmail)),
+                  React.createElement(
+                    'button',
+                    {
+                      onClick: logout,
+                      className: 'bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-full shadow-md transition-all transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-red-300'
+                    },
+                    'Logout'
+                  ),
+                  React.createElement(
+                    'button',
+                    {
+                      onClick: () => navigateTo('home'),
+                      className: 'ml-4 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-full shadow-md transition-all transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300'
+                    },
+                    'Go to App'
+                  )
+                )
+              ) : (
+                React.createElement(
+                  'form',
+                  { onSubmit: showOtpField ? handleVerifyOtp : handleSendOtp, className: 'space-y-4' },
+                  React.createElement(
+                    'div',
+                    null,
+                    React.createElement('label', { htmlFor: 'email', className: 'block text-gray-700 text-sm font-bold mb-2' }, 'Email:'),
+                    React.createElement('input', {
+                      type: 'email',
+                      id: 'email',
+                      className: 'shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+                      placeholder: 'your.email@example.com',
+                      value: email,
+                      onChange: (e) => setEmail(e.target.value),
+                      required: true,
+                      disabled: showOtpField
+                    })
+                  ),
+                  !showOtpField ? (
+                    React.createElement(
+                      'button',
+                      {
+                        type: 'submit',
+                        className: 'bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-full w-full shadow-md transition-all transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300'
+                      },
+                      'Send OTP'
+                    )
+                  ) : (
+                    React.createElement(
+                      React.Fragment,
+                      null,
+                      React.createElement(
+                        'div',
+                        null,
+                        React.createElement('label', { htmlFor: 'otp', className: 'block text-gray-700 text-sm font-bold mb-2' }, 'OTP:'),
+                        React.createElement('input', {
+                          type: 'text',
+                          id: 'otp',
+                          className: 'shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+                          placeholder: 'Enter 6-digit OTP',
+                          value: otp,
+                          onChange: (e) => setOtp(e.target.value),
+                          maxLength: '6',
+                          required: true
+                        })
+                      ),
+                      React.createElement(
+                        'button',
+                        {
+                          type: 'submit',
+                          className: 'bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-full w-full shadow-md transition-all transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-300'
+                        },
+                        'Verify OTP'
+                      )
+                    )
+                  ),
+                  message && (
+                    React.createElement(
+                      'p',
+                      { className: `text-center text-sm mt-4 ${message.includes('successful') ? 'text-green-500' : 'text-red-500'}` },
+                      message
+                    )
+                  )
+                )
+              ),
+              React.createElement(
+                'p',
+                { className: 'text-sm text-gray-500 text-center mt-6' },
+                React.createElement('strong', { className: 'text-red-500' }, 'Disclaimer:'),
+                ' This is a simulated authentication. OTP is shown in console. Data is stored in your browser\'s localStorage. Not for production.'
+              )
+            )
+          );
+        };
+
+        const Header = () => {
+          const { navigateTo, currentUser } = useContext(AppContext);
+          const { logout } = useContext(AuthContext);
+
+          return React.createElement(
+            'header',
+            { className: 'bg-blue-800 text-white p-4 shadow-lg rounded-b-lg' },
+            React.createElement(
+              'nav',
+              { className: 'container mx-auto flex justify-between items-center' },
+              React.createElement(
+                'div',
+                { className: 'flex items-center space-x-4 cursor-pointer', onClick: () => navigateTo('home') },
+                React.createElement('img', { src: 'namerecall.jpeg', alt: 'NameRecall Logo', className: 'h-10 w-10 object-contain rounded-full' }),
+                React.createElement('div', { className: 'text-2xl font-bold' }, 'NameRecall Challenge')
+              ),
+              React.createElement(
+                'ul',
+                { className: 'flex space-x-6' },
+                React.createElement('li', null, React.createElement('button', { onClick: () => navigateTo('home'), className: 'hover:text-blue-200 transition-colors' }, 'Home')),
+                React.createElement('li', null, React.createElement('button', { onClick: () => navigateTo('howItWorks'), className: 'hover:text-blue-200 transition-colors' }, 'How It Works')),
+                React.createElement('li', null, React.createElement('button', { onClick: () => navigateTo('levelSelection'), className: 'hover:text-blue-200 transition-colors' }, 'Play')),
+                React.createElement('li', null, React.createElement('button', { onClick: () => navigateTo('dashboard'), className: 'hover:text-blue-200 transition-colors' }, 'Dashboard')),
+                React.createElement(
+                  'li',
+                  { className: 'flex items-center space-x-2' },
+                  React.createElement('span', { className: 'text-blue-200' }, 'Hello, ', currentUser.name, '!'),
+                  currentUser.id !== 'guest' && (
+                    React.createElement('button', { onClick: logout, className: 'text-sm bg-red-500 hover:bg-red-600 px-3 py-1 rounded-full transition-colors' }, 'Logout')
+                  )
+                )
+              )
+            )
+          );
+        };
+
+        const Footer = () => {
+          return React.createElement(
+            'footer',
+            { className: 'bg-gray-800 text-white p-4 mt-8 shadow-inner rounded-t-lg' },
+            React.createElement(
+              'div',
+              { className: 'container mx-auto text-center text-sm' },
+              '© ',
+              new Date().getFullYear(),
+              ' NameRecall Challenge. All rights reserved.'
+            )
+          );
+        };
+
+        const HomePage = () => {
+          const { navigateTo } = useContext(AppContext);
+          return React.createElement(
+            'div',
+            { className: 'flex flex-col items-center justify-center min-h-[calc(100vh-160px)] bg-gradient-to-br from-blue-100 to-green-100 p-6 rounded-lg shadow-xl' },
+            React.createElement(
+              'h1',
+              { className: 'text-5xl font-extrabold text-blue-800 mb-6 text-center' },
+              'Sharpen Your Memory. ',
+              React.createElement('br', null),
+              ' Master Names. Instantly.'
+            ),
+            React.createElement(
+              'p',
+              { className: 'text-xl text-gray-700 mb-10 text-center max-w-2xl' },
+              'Train your short-term memory with our engaging and interactive name recall challenges. Improve your focus, boost your confidence, and never forget a name again!'
+            ),
+            React.createElement(
+              'button',
+              {
+                onClick: () => navigateTo('levelSelection'),
+                className: 'bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 px-8 rounded-full shadow-lg transition-all transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-orange-300'
+              },
+              'Start Your Memory Journey'
+            ),
+            React.createElement(
+              'div',
+              { className: 'mt-16 grid md:grid-cols-3 gap-8 max-w-4xl' },
+              React.createElement(
+                'div',
+                { className: 'bg-white p-6 rounded-lg shadow-md text-center' },
+                React.createElement('div', { className: 'text-blue-500 text-4xl mb-4' }, '🧠'),
+                React.createElement('h3', { className: 'text-xl font-semibold text-gray-800 mb-2' }, 'Boost Focus'),
+                React.createElement('p', { className: 'text-gray-600' }, 'Enhance your concentration and attention span.')
+              ),
+              React.createElement(
+                'div',
+                { className: 'bg-white p-6 rounded-lg shadow-md text-center' },
+                React.createElement('div', { className: 'text-green-500 text-4xl mb-4' }, '🏆'),
+                React.createElement('h3', { className: 'text-xl font-semibold text-gray-800 mb-2' }, 'Track Progress'),
+                React.createElement('p', { className: 'text-gray-600' }, 'Monitor your improvement across various levels.')
+              ),
+              React.createElement(
+                'div',
+                { className: 'bg-white p-6 rounded-lg shadow-md text-center' },
+                React.createElement('div', { className: 'text-purple-500 text-4xl mb-4' }, '🤝'),
+                React.createElement('h3', { className: 'text-xl font-semibold text-gray-800 mb-2' }, 'Improve Social Skills'),
+                React.createElement('p', { className: 'text-gray-600' }, 'Gain confidence in remembering new acquaintances.')
+              )
+            )
+          );
+        };
+
+        const HowItWorksPage = () => {
+          const { navigateTo } = useContext(AppContext);
+          return React.createElement(
+            'div',
+            { className: 'flex flex-col items-center justify-center min-h-[calc(100vh-160px)] bg-gray-50 p-6 rounded-lg shadow-xl' },
+            React.createElement('h1', { className: 'text-4xl font-bold text-blue-800 mb-10 text-center' }, 'How the NameRecall Challenge Works'),
+            React.createElement(
+              'div',
+              { className: 'grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-5xl' },
+              React.createElement(
+                'div',
+                { className: 'bg-white p-6 rounded-lg shadow-md text-center flex flex-col items-center' },
+                React.createElement('div', { className: 'text-blue-500 text-5xl mb-4' }, '👁️'),
+                React.createElement('h3', { className: 'text-2xl font-semibold text-gray-800 mb-2' }, 'Step 1: See the Faces & Names'),
+                React.createElement('p', { className: 'text-gray-600' }, 'A series of faces and their names will be presented to you one by one. Pay close attention!')
+              ),
+              React.createElement(
+                'div',
+                { className: 'bg-white p-6 rounded-lg shadow-md text-center flex flex-col items-center' },
+                React.createElement('div', { className: 'text-green-500 text-5xl mb-4' }, '🧠'),
+                React.createElement('h3', { className: 'text-2xl font-semibold text-gray-800 mb-2' }, 'Step 2: Remember & Focus'),
+                React.createElement('p', { className: 'text-gray-600' }, 'Use your memory skills to retain the names. Some levels might include extra details to challenge you.')
+              ),
+              React.createElement(
+                'div',
+                { className: 'bg-white p-6 rounded-lg shadow-md text-center flex flex-col items-center' },
+                React.createElement('div', { className: 'text-orange-500 text-5xl mb-4' }, '✍️'),
+                React.createElement('h3', { className: 'text-2xl font-semibold text-gray-800 mb-2' }, 'Step 3: Recall & Type'),
+                React.createElement('p', { className: 'text-gray-600' }, 'After the presentation, you\'ll see the faces again. Type in the name you remember for each one.')
+              ),
+              React.createElement(
+                'div',
+                { className: 'bg-white p-6 rounded-lg shadow-md text-center flex flex-col items-center' },
+                React.createElement('div', { className: 'text-purple-500 text-5xl mb-4' }, '📈'),
+                React.createElement('h3', { className: 'text-2xl font-semibold text-gray-800 mb-2' }, 'Step 4: Track Your Progress & Improve!'),
+                React.createElement('p', { className: 'text-gray-600' }, 'Get instant feedback on your recall, track your scores, and see yourself improve over time.')
+              )
+            ),
+            React.createElement(
+              'button',
+              {
+                onClick: () => navigateTo('levelSelection'),
+                className: 'mt-12 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300'
+              },
+              'Ready to Play?'
+            )
+          );
+        };
+
+        const LevelSelectionPage = () => {
+          const { navigateTo, userProgress } = useContext(AppContext);
+
+          const getLevelStatus = (levelId) => {
+            const progress = userProgress[levelId];
+            if (progress && progress.completed) {
+              return 'Completed';
+            }
+            const levelIndex = LEVELS.findIndex(function(l) { return l.id === levelId; }); // Changed to ES5 function
+            if (levelIndex === 0) return 'Unlocked';
+            const prevLevel = LEVELS[levelIndex - 1];
+            if (userProgress[prevLevel.id] && userProgress[prevLevel.id].completed) {
+              return 'Unlocked';
+            }
+            return 'Locked';
+          };
+
+          return React.createElement(
+            'div',
+            { className: 'flex flex-col items-center justify-center min-h-[calc(100vh-160px)] bg-gradient-to-br from-blue-50 to-indigo-100 p-6 rounded-lg shadow-xl' },
+            React.createElement('h1', { className: 'text-4xl font-bold text-blue-800 mb-10 text-center' }, 'Choose Your Challenge Level'),
+            React.createElement(
+              'div',
+              { className: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl w-full' },
+              LEVELS.map(function(level, index) { // Changed to ES5 function
+                const status = getLevelStatus(level.id);
+                const isLocked = status === 'Locked';
+                const cardBg = isLocked ? 'bg-gray-200' : (userProgress[level.id] && userProgress[level.id].completed ? 'bg-green-100' : 'bg-blue-100'); // Changed optional chaining
+                const cardBorder = isLocked ? 'border-gray-300' : (userProgress[level.id] && userProgress[level.id].completed ? 'border-green-400' : 'border-blue-400'); // Changed optional chaining
+                const textColor = isLocked ? 'text-gray-500' : 'text-blue-800';
+                const buttonBg = isLocked ? 'bg-gray-400 cursor-not-allowed' : (userProgress[level.id] && userProgress[level.id].completed ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'); // Changed optional chaining
+
+                return React.createElement(
+                  'div',
+                  {
+                    key: level.id,
+                    className: `flex flex-col items-center p-6 rounded-lg shadow-md border-2 ${cardBg} ${cardBorder} transition-all duration-300`
+                  },
+                  React.createElement('div', { className: `text-5xl font-extrabold mb-4 ${textColor}` }, level.numberOfNames),
+                  React.createElement('h3', { className: `text-2xl font-semibold mb-2 ${textColor}` }, level.name),
+                  React.createElement('p', { className: `text-sm mb-4 ${isLocked ? 'text-gray-500' : 'text-gray-600'}` }, status === 'Completed' ? 'Level Completed!' : (status === 'Locked' ? 'Locked' : 'Ready to Play')),
+                  userProgress[level.id] && (
+                    React.createElement(
+                      'div',
+                      { className: 'text-sm text-gray-700 mb-4 text-center' },
+                      React.createElement('p', null, 'Best Score: ', userProgress[level.id].bestScore, '/', level.numberOfNames),
+                      React.createElement('p', null, 'Attempts: ', userProgress[level.id].attempts)
+                    )
+                  ),
+                  React.createElement(
+                    'button',
+                    {
+                      onClick: function() { return !isLocked && navigateTo('game', { level }); }, // Changed to ES5 function
+                      className: `text-white font-bold py-2 px-6 rounded-full shadow-md ${buttonBg} transition-all transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-opacity-75 ${isLocked ? 'focus:ring-gray-300' : (userProgress[level.id] && userProgress[level.id].completed ? 'focus:ring-green-300' : 'focus:ring-blue-300')}`, // Changed optional chaining
+                      disabled: isLocked
+                    },
+                    status === 'Completed' ? 'Replay Level' : 'Play Level'
+                  )
+                );
+              })
+            )
+          );
+        };
+
+        const GamePage = () => {
+          const { navigateTo, currentGameData, updateProgress } = useContext(AppContext);
+          const { level } = currentGameData;
+
+          const [phase, setPhase] = useState('presentation');
+          const [currentPersonIndex, setCurrentPersonIndex] = useState(0);
+          const [namesToRemember, setNamesToRemember] = useState([]);
+          const [userAnswers, setUserAnswers] = useState(Array(level.numberOfNames).fill(''));
+          const [timer, setTimer] = useState(level.presentationTime / 1000);
+          const [startTime, setStartTime] = useState(null);
+
+          const handleSubmitAnswers = useCallback(function() { // Changed to ES5 function
+            const endTime = Date.now();
+            const timeTaken = Math.round((endTime - startTime) / 1000);
+
+            let correctCount = 0;
+            const correctNamesPool = namesToRemember.map(function(p) { return p.name.toLowerCase(); }); // Changed to ES5 function
+            const results = [];
+            const tempUserAnswers = userAnswers.slice(); // Use slice to create a copy
+
+            for (let i = 0; i < tempUserAnswers.length; i++) {
+              const userAnswer = tempUserAnswers[i].toLowerCase().trim();
+              if (userAnswer === '') continue;
+
+              const correctNameIndex = correctNamesPool.indexOf(userAnswer);
+
+              if (correctNameIndex !== -1) {
+                correctCount++;
+                const matchedPerson = namesToRemember[correctNameIndex];
+                results.push({
+                  person: matchedPerson,
+                  userAnswer: tempUserAnswers[i],
+                  isCorrect: true,
+                });
+                correctNamesPool.splice(correctNameIndex, 1);
+                tempUserAnswers[i] = '';
+              }
+            }
+
+            namesToRemember.forEach(function(person) { // Changed to ES5 function
+              if (!results.some(function(r) { return r.person.id === person.id && r.isCorrect; })) { // Changed to ES5 function
+                results.push({
+                  person: person,
+                  userAnswer: '',
+                  isCorrect: false,
+                });
+              }
+            });
+
+            results.sort(function(a, b) { return a.person.id - b.person.id; }); // Changed to ES5 function
+
+            updateProgress(level.id, correctCount, level.numberOfNames, timeTaken);
+            navigateTo('results', { level: level, results: results, score: correctCount, totalNames: level.numberOfNames, timeTaken: timeTaken }); // Explicitly define object properties
+          }, [level, namesToRemember, userAnswers, updateProgress, navigateTo, startTime]);
+
+
+          useEffect(function() { // Changed to ES5 function
+            const shuffledPeople = PEOPLE_DATA.sort(function() { return 0.5 - Math.random(); }).slice(0, level.numberOfNames); // Changed to ES5 function
+            setNamesToRemember(shuffledPeople.map(function(p) { // Changed to ES5 function
+              return {
+                id: p.id,
+                name: p.name,
+                imageUrl: p.imageUrl,
+                detail: level.detailHint ? PERSON_DETAILS[p.name] : null,
+              };
+            }));
+            setStartTime(Date.now());
+            setUserAnswers(Array(level.numberOfNames).fill(''));
+          }, [level]);
+
+          useEffect(function() { // Changed to ES5 function
+            if (phase === 'presentation' && namesToRemember.length > 0 && currentPersonIndex < namesToRemember.length) {
+              const interval = setInterval(function() { // Changed to ES5 function
+                setTimer(function(prev) { return prev - 1; }); // Changed to ES5 function
+              }, 1000);
+
+              const timeout = setTimeout(function() { // Changed to ES5 function
+                setCurrentPersonIndex(function(prev) { return prev + 1; }); // Changed to ES5 function
+                setTimer(level.presentationTime / 1000);
+              }, level.presentationTime);
+
+              return function() { // Changed to ES5 function
+                clearInterval(interval);
+                clearTimeout(timeout);
+              };
+            } else if (phase === 'presentation' && namesToRemember.length > 0 && currentPersonIndex >= namesToRemember.length) {
+              setPhase('recall');
+              setTimer(level.recallTime);
+            }
+          }, [phase, currentPersonIndex, namesToRemember, level.presentationTime, level.recallTime]);
+
+          useEffect(function() { // Changed to ES5 function
+            if (phase === 'recall' && timer > 0) {
+              const interval = setInterval(function() { // Changed to ES5 function
+                setTimer(function(prev) { return prev - 1; }); // Changed to ES5 function
+              }, 1000);
+              return function() { clearInterval(interval); }; // Changed to ES5 function
+            } else if (phase === 'recall' && timer === 0) {
+              handleSubmitAnswers();
+            }
+          }, [phase, timer, handleSubmitAnswers]);
+
+          const handleInputChange = (index, value) => {
+            setUserAnswers(function(prev) { // Changed to ES5 function
+              const newAnswers = prev.slice(); // Use slice to create a copy
+              newAnswers[index] = value;
+              return newAnswers;
+            });
+          };
+
+          const currentPerson = namesToRemember[currentPersonIndex];
+
+          return React.createElement(
+            'div',
+            { className: 'flex flex-col items-center justify-center min-h-[calc(100vh-160px)] bg-gray-50 p-6 rounded-lg shadow-xl' },
+            React.createElement(
+              'div',
+              { className: 'w-full max-w-3xl bg-white rounded-lg shadow-lg p-8' },
+              React.createElement(
+                'div',
+                { className: 'flex justify-between items-center mb-6 text-xl font-semibold text-gray-700' },
+                React.createElement('span', null, 'Level: ', level.name),
+                React.createElement('span', null, phase === 'presentation' ? `Next in: ${timer}s` : `Time left: ${timer}s`)
+              ),
+              phase === 'presentation' && currentPerson ? (
+                React.createElement(
+                  'div',
+                  { className: 'flex flex-col items-center animate-fade-in' },
+                  React.createElement('h2', { className: 'text-4xl font-bold text-blue-700 mb-2' }, currentPerson.name),
+                  level.detailHint && currentPerson.detail && (
+                    React.createElement('p', { className: 'text-lg text-gray-600 italic' }, currentPerson.detail)
+                  ),
+                  React.createElement('p', { className: 'mt-8 text-gray-500' }, currentPersonIndex + 1, ' / ', namesToRemember.length)
+                )
+              ) : phase === 'recall' ? (
+                React.createElement(
+                  'div',
+                  { className: 'flex flex-col items-center' },
+                  React.createElement('h2', { className: 'text-3xl font-bold text-blue-700 mb-8 text-center' }, 'Time to Recall!'),
+                  React.createElement(
+                    'div',
+                    { className: 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 w-full' },
+                    Array.from({ length: level.numberOfNames }).map(function(_, index) { // Changed to ES5 function
+                      return React.createElement(
+                        'div',
+                        { key: index, className: 'flex flex-col items-center' },
+                        React.createElement(
+                          'div',
+                          { className: 'w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center mb-3 border-2 border-gray-300 text-gray-600 text-sm' },
+                          'Input ',
+                          index + 1
+                        ),
+                        React.createElement('input', {
+                          type: 'text',
+                          placeholder: 'Type name...',
+                          value: userAnswers[index] || '',
+                          onChange: function(e) { return handleInputChange(index, e.target.value); }, // Changed to ES5 function
+                          className: 'w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-center text-gray-800'
+                        })
+                      );
+                    })
+                  ),
+                  React.createElement(
+                    'button',
+                    {
+                      onClick: handleSubmitAnswers,
+                      className: 'mt-10 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-all transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-300'
+                    },
+                    'Submit Answers'
+                  )
+                )
+              ) : (
+                React.createElement('div', { className: 'text-center text-gray-600 text-lg' }, 'Loading game...')
+              )
+            )
+          );
+        };
+
+        const ResultsPage = () => {
+          const { navigateTo, currentGameData } = useContext(AppContext);
+          const { level, results, score, totalNames, timeTaken } = currentGameData;
+
+          const incorrectCount = totalNames - score;
+
+          const handleShare = async () => {
+            const shareTitle = `I scored ${score}/${totalNames} in "${level.name}"!`;
+            const shareText = `Think you can beat me? 🧠💥 Join the NameRecall Challenge — the brain-training game trusted by 12,000+ players.`;
+            const shareUrl = window.location.origin;       
+
+            try {
+              if (navigator.share && navigator.canShare({ title, text, url: shareUrl })) {
+                await navigator.share({ title, text, url: shareUrl });
+                console.log("Score shared via Web Share API");
+              } else {
+                await navigator.clipboard.writeText(`${shareText} ${shareUrl}`);
+                alert("Link copied! Share it anywhere 🥳");
+              }
+            } catch (err) {
+              console.error("Share failed:", err);
+              const twitter = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
+              window.open(twitter, "_blank", "noopener,noreferrer");
+            }
+          };
+
+          return React.createElement(
+            'div',
+            { className: 'flex flex-col items-center justify-center min-h-[calc(100vh-160px)] bg-gradient-to-br from-purple-50 to-pink-50 p-6 rounded-lg shadow-xl' },
+            React.createElement(
+              'div',
+              { className: 'w-full max-w-4xl bg-white rounded-lg shadow-lg p-8' },
+              React.createElement(
+                'h1',
+                { className: 'text-4xl font-bold text-center mb-6' },
+                score === totalNames ? React.createElement('span', { className: 'text-green-600' }, 'Challenge Complete! 🎉') : React.createElement('span', { className: 'text-red-600' }, 'Challenge Ended! Try Again! 😔')
+              ),
+              React.createElement(
+                'div',
+                { className: 'grid grid-cols-1 md:grid-cols-3 gap-4 text-center text-lg mb-8' },
+                React.createElement(
+                  'div',
+                  { className: 'p-4 bg-blue-50 rounded-lg shadow-sm' },
+                  React.createElement('p', { className: 'text-blue-700 font-semibold' }, 'Correct:'),
+                  React.createElement('p', { className: 'text-2xl text-blue-800' }, score, '/', totalNames)
+                ),
+                React.createElement(
+                  'div',
+                  { className: 'p-4 bg-red-50 rounded-lg shadow-sm' },
+                  React.createElement('p', { className: 'text-red-700 font-semibold' }, 'Incorrect:'),
+                  React.createElement('p', { className: 'text-2xl text-red-800' }, incorrectCount)
+                ),
+                React.createElement(
+                  'div',
+                  { className: 'p-4 bg-yellow-50 rounded-lg shadow-sm' },
+                  React.createElement('p', { className: 'text-yellow-700 font-semibold' }, 'Time Taken:'),
+                  React.createElement('p', { className: 'text-2xl text-yellow-800' }, timeTaken, 's')
+                )
+              ),
+              React.createElement('h2', { className: 'text-2xl font-semibold text-gray-800 mb-4 text-center' }, 'Detailed Results'),
+              React.createElement(
+                'div',
+                { className: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8' },
+                results.map(function(item, index) { // Changed to ES5 function
+                  return React.createElement(
+                    'div',
+                    {
+                      key: index,
+                      className: `p-4 rounded-lg shadow-sm flex items-center space-x-4 ${item.isCorrect ? 'bg-green-50 border border-green-300' : 'bg-red-50 border border-red-300'}`
+                    },
+                    React.createElement('img', {
+                      src: item.person.imageUrl,
+                      alt: item.person.name,
+                      className: 'w-16 h-16 rounded-full object-cover'
+                    }),
+                    React.createElement(
+                      'div',
+                      { className: 'flex-1' },
+                      React.createElement('p', { className: 'font-semibold text-gray-800' }, 'Original: ', item.person.name),
+                      React.createElement(
+                        'p',
+                        { className: 'text-gray-600' },
+                        'Your Answer: ',
+                        React.createElement('span', { className: `${item.isCorrect ? 'text-green-700' : 'text-red-700 font-bold'}` }, item.userAnswer || '[No Answer]')
+                      )
+                    ),
+                    React.createElement('div', { className: 'text-2xl' }, item.isCorrect ? '✅' : '❌')
+                  );
+                })
+              ),
+              React.createElement(
+                'div',
+                { className: 'flex justify-center space-x-4 mt-8' },
+                React.createElement(
+                  'button',
+                  {
+                    onClick: function() { return navigateTo('game', { level: level }); }, // Changed to ES5 function
+                    className: 'bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300'
+                  },
+                  'Play Level Again'
+                ),
+                React.createElement(
+                  'button',
+                  {
+                    onClick: function() { return navigateTo('levelSelection'); }, // Changed to ES5 function
+                    className: 'bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-gray-300'
+                  },
+                  'Back to Levels'
+                ),
+                React.createElement(
+                  'button',
+                  {
+                    onClick: handleShare,
+                    className: 'bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-orange-300'
+                  },
+                  'Share My Score 🔗'
+                )
+              )
+            )
+          );
+        };
+
+        const UserDashboard = () => {
+          const { currentUser, userProgress, navigateTo } = useContext(AppContext);
+
+          const totalLevelsCompleted = Object.values(userProgress).filter(function(p) { return p.completed; }).length; // Changed to ES5 function
+          const totalAttempts = Object.values(userProgress).reduce(function(sum, p) { return sum + p.attempts; }, 0); // Changed to ES5 function
+          const totalScore = Object.values(userProgress).reduce(function(sum, p) { return sum + p.totalScore; }, 0); // Changed to ES5 function
+
+          const progressData = LEVELS.map(function(level) { // Changed to ES5 function
+            const progress = userProgress[level.id];
+            return {
+              levelName: level.name,
+              score: progress ? progress.bestScore : 0,
+              total: level.numberOfNames,
+              accuracy: progress ? (progress.bestScore / level.numberOfNames) * 100 : 0,
+            };
+          });
+
+          const recentActivity = Object.entries(userProgress)
+            .map(function(entry) { // Changed to ES5 function
+              var levelId = entry[0];
+              var progress = entry[1];
+              return {
+              level: LEVELS.find(function(l) { return l.id === levelId; }) ? LEVELS.find(function(l) { return l.id === levelId; }).name : levelId, // Changed to ES5 function and optional chaining
+              score: progress.bestScore,
+              total: LEVELS.find(function(l) { return l.id === levelId; }) ? LEVELS.find(function(l) { return l.id === levelId; }).numberOfNames : 0, // Changed to ES5 function and optional chaining
+              date: progress.lastPlayedAt ? new Date(progress.lastPlayedAt).toLocaleString() : 'N/A',
+            };
+            })
+            .sort(function(a, b) { return new Date(b.date) - new Date(a.date); }) // Changed to ES5 function
+            .slice(0, 5);
+
+          const personalBests = Object.entries(userProgress)
+            .filter(function(entry) { // Changed to ES5 function
+                var progress = entry[1];
+                return progress.bestScore > 0;
+            })
+            .map(function(entry) { // Changed to ES5 function
+                var levelId = entry[0];
+                var progress = entry[1];
+                return {
+                  level: LEVELS.find(function(l) { return l.id === levelId; }) ? LEVELS.find(function(l) { return l.id === levelId; }).name : levelId, // Changed to ES5 function and optional chaining
+                  bestScore: progress.bestScore,
+                  bestTime: progress.bestTime === Infinity ? 'N/A' : `${progress.bestTime}s`,
+                };
+            })
+            .sort(function(a, b) { return b.bestScore - a.bestScore; }); // Changed to ES5 function
+
+          return React.createElement(
+            'div',
+            { className: 'flex flex-col items-center min-h-[calc(100vh-160px)] bg-gray-100 p-6 rounded-lg shadow-xl' },
+            React.createElement(
+              'div',
+              { className: 'w-full max-w-5xl bg-white rounded-lg shadow-lg p-8' },
+              React.createElement(
+                'h1',
+                { className: 'text-4xl font-bold text-blue-800 mb-8 text-center' },
+                'Welcome Back, ',
+                currentUser.name,
+                '!'
+              ),
+              React.createElement(
+                'div',
+                { className: 'grid grid-cols-1 md:grid-cols-3 gap-6 mb-10 text-center' },
+                React.createElement(
+                  'div',
+                  { className: 'bg-blue-50 p-6 rounded-lg shadow-sm border-b-4 border-blue-400' },
+                  React.createElement('p', { className: 'text-blue-700 text-lg font-semibold' }, 'Levels Completed'),
+                  React.createElement('p', { className: 'text-4xl font-extrabold text-blue-800' }, totalLevelsCompleted, '/', LEVELS.length)
+                ),
+                React.createElement(
+                  'div',
+                  { className: 'bg-green-50 p-6 rounded-lg shadow-sm border-b-4 border-green-400' },
+                  React.createElement('p', { className: 'text-green-700 text-lg font-semibold' }, 'Total Attempts'),
+                  React.createElement('p', { className: 'text-4xl font-extrabold text-green-800' }, totalAttempts)
+                ),
+                React.createElement(
+                  'div',
+                  { className: 'bg-purple-50 p-6 rounded-lg shadow-sm border-b-4 border-purple-400' },
+                  React.createElement('p', { className: 'text-purple-700 text-lg font-semibold' }, 'Total Score'),
+                  React.createElement('p', { className: 'text-4xl font-extrabold text-purple-800' }, totalScore)
+                )
+              ),
+              React.createElement(
+                'div',
+                { className: 'grid grid-cols-1 lg:grid-cols-2 gap-8' },
+                React.createElement(
+                  'div',
+                  { className: 'bg-gray-50 p-6 rounded-lg shadow-md' },
+                  React.createElement('h2', { className: 'text-2xl font-semibold text-gray-800 mb-4' }, 'Your Progress'),
+                  React.createElement(
+                    'div',
+                    { className: 'space-y-3' },
+                    progressData.map(function(data, index) { // Changed to ES5 function
+                      return React.createElement(
+                        'div',
+                        { key: index, className: 'flex items-center space-x-4' },
+                        React.createElement('span', { className: 'font-medium text-gray-700 w-24' }, data.levelName, ':'),
+                        React.createElement(
+                          'div',
+                          { className: 'flex-1 bg-gray-200 rounded-full h-4' },
+                          React.createElement('div', {
+                            className: 'bg-blue-500 h-4 rounded-full transition-all duration-500',
+                            style: { width: `${data.accuracy}%` }
+                          })
+                        ),
+                        React.createElement('span', { className: 'text-gray-600 w-12 text-right' }, data.accuracy.toFixed(0), '%')
+                      );
+                    })
+                  )
+                ),
+                React.createElement(
+                  'div',
+                  { className: 'bg-gray-50 p-6 rounded-lg shadow-md' },
+                  React.createElement('h2', { className: 'text-2xl font-semibold text-gray-800 mb-4' }, 'Recent Activity'),
+                  recentActivity.length > 0 ? (
+                    React.createElement(
+                      'ul',
+                      { className: 'space-y-3' },
+                      recentActivity.map(function(activity, index) { // Changed to ES5 function
+                        return React.createElement(
+                          'li',
+                          { key: index, className: 'flex justify-between items-center text-gray-700 p-2 bg-white rounded-md shadow-sm' },
+                          React.createElement('span', null, activity.level, ' - Score: ', activity.score, '/', activity.total),
+                          React.createElement('span', { className: 'text-sm text-gray-500' }, activity.date)
+                        );
+                      })
+                    )
+                  ) : (
+                    React.createElement('p', { className: 'text-gray-500 italic' }, 'No recent activity. Start playing!')
+                  )
+                ),
+                React.createElement(
+                  'div',
+                  { className: 'lg:col-span-2 bg-gray-50 p-6 rounded-lg shadow-md' },
+                  React.createElement('h2', { className: 'text-2xl font-semibold text-gray-800 mb-4' }, 'Personal Bests'),
+                  personalBests.length > 0 ? (
+                    React.createElement(
+                      'div',
+                      { className: 'overflow-x-auto' },
+                      React.createElement(
+                        'table',
+                        { className: 'min-w-full bg-white rounded-lg shadow-sm' },
+                        React.createElement(
+                          'thead',
+                          null,
+                          React.createElement(
+                            'tr',
+                            { className: 'bg-gray-200 text-gray-700 uppercase text-sm leading-normal' },
+                            React.createElement('th', { className: 'py-3 px-6 text-left rounded-tl-lg' }, 'Level'),
+                            React.createElement('th', { className: 'py-3 px-6 text-left' }, 'Best Score'),
+                            React.createElement('th', { className: 'py-3 px-6 text-left rounded-tr-lg' }, 'Best Time')
+                          )
+                        ),
+                        React.createElement(
+                          'tbody',
+                          { className: 'text-gray-600 text-sm font-light' },
+                          personalBests.map(function(best, index) { // Changed to ES5 function
+                            return React.createElement(
+                              'tr',
+                              { key: index, className: 'border-b border-gray-200 hover:bg-gray-100' },
+                              React.createElement('td', { className: 'py-3 px-6 text-left whitespace-nowrap' }, best.level),
+                              React.createElement('td', { className: 'py-3 px-6 text-left' }, best.bestScore),
+                              React.createElement('td', { className: 'py-3 px-6 text-left' }, best.bestTime)
+                            );
+                          })
+                        )
+                      )
+                    )
+                  ) : (
+                    React.createElement('p', { className: 'text-gray-500 italic' }, 'No personal bests yet. Keep playing to set new records!')
+                  )
+                )
+              ),
+              React.createElement(
+                'div',
+                { className: 'flex justify-center space-x-4 mt-10' },
+                React.createElement(
+                  'button',
+                  {
+                    onClick: function() { return navigateTo('levelSelection'); }, // Changed to ES5 function
+                    className: 'bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-300'
+                  },
+                  'Play New Challenge'
+                ),
+                React.createElement(
+                  'button',
+                  {
+                    onClick: function() { return navigateTo('home'); }, // Changed to ES5 function
+                    className: 'bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300'
+                  },
+                  'Edit Profile (Placeholder)'
+                ),
+                React.createElement(
+                  'button',
+                  {
+                    onClick: function() { return alert('Leaderboard feature coming soon!'); }, // Changed to ES5 function
+                    className: 'bg-purple-500 hover:bg-purple-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-purple-300'
+                  },
+                  'Leaderboard (Placeholder)'
+                )
+              )
+            )
+          );
+        };
+
+        const AppContent = () => {
+          const { currentPage, navigateTo, currentUser } = useContext(AppContext);
+          const { userEmail } = useContext(AuthContext);
+
+          const renderPage = () => {
+            if (!userEmail) {
+              return React.createElement(AuthForm, null);
+            }
+
+            switch (currentPage) {
+              case 'home':
+                return React.createElement(HomePage, null);
+              case 'howItWorks':
+                return React.createElement(HowItWorksPage, null);
+              case 'levelSelection':
+                return React.createElement(LevelSelectionPage, null);
+              case 'game':
+                return React.createElement(GamePage, null);
+              case 'results':
+                return React.createElement(ResultsPage, null);
+              case 'dashboard':
+                return React.createElement(UserDashboard, null);
+              default:
+                return React.createElement(HomePage, null);
+            }
+          };
+
+          return React.createElement(
+            React.Fragment,
+            null,
+            userEmail && React.createElement(Header, null),
+            React.createElement(
+              'main',
+              { className: 'flex-grow p-4' },
+              renderPage()
+            ),
+            userEmail && React.createElement(Footer, null)
+          );
+        };
+
+        // Main App Component
+        const App = () => {
+          return React.createElement(
+            'div',
+            { className: 'min-h-screen bg-gray-200 font-sans antialiased flex flex-col' },
+            React.createElement(
+              AuthProvider,
+              null,
+              React.createElement(
+                AppProvider,
+                null,
+                React.createElement(AppContent, null)
+              )
+            )
+          );
+        };
+
+        // Render the App into the root div
+        const domNode = document.getElementById('root');
+        const root = ReactDOM.createRoot(domNode);
+        root.render(React.createElement(App, null));
+
+    </script>
+</body>
+</html>
