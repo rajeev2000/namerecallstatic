@@ -19,11 +19,12 @@ jobs:
       - name: "Build & Deploy to Azure Static Web Apps"
         uses: Azure/static-web-apps-deploy@v1
         with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          azure_static_web_apps_api_token: ${{AZURE_STATIC_WEB_APPS_API_TOKEN_CALM_GROUND_0919F5E10}}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
           app_location: "/"           # Root folder contains your static files
           output_location: "/"        # Same as app_location
           api_location: ""            # No API in this project
           skip_app_build: true        # Skip Oryx build entirely
+
 
