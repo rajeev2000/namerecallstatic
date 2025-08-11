@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const url = window.location.href;
     const base = url.substring(0, url.lastIndexOf('/'));
     // join base and game.html
-    return base + '/game.html';
+    return base + '/Namerecall.html';
   }
 
   // Click handler for Google OAuth sign-in
