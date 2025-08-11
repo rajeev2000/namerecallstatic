@@ -55,11 +55,11 @@
         const LEVELS = [
           { id: 'level-4', name: '4 Names', numberOfNames: 4, presentationTime: 2000, recallTime: 30, detailHint: false },
           { id: 'level-5', name: '5 Names', numberOfNames: 5, presentationTime: 1800, recallTime: 35, detailHint: false },
-          { id: 'level-6', name: '6 Names', presentationTime: 1600, recallTime: 40, detailHint: true, hintText: 'Hobby: ' },
-          { id: 'level-7', name: '7 Names', presentationTime: 1400, recallTime: 45, detailHint: true, hintText: 'Job: ' },
-          { id: 'level-8', name: '8 Names', presentationTime: 1200, recallTime: 50, detailHint: true, hintText: 'City: ' },
-          { id: 'level-9', name: '9 Names', presentationTime: 1000, recallTime: 55, detailHint: true, hintText: 'Fact: ' },
-          { id: 'level-10', name: '10 Names', presentationTime: 800, recallTime: 60, detailHint: true, hintText: 'Detail: ' },
+          { id: 'level-6', name: '6 Names', numberOfNames: 6, presentationTime: 1600, recallTime: 40, detailHint: true, hintText: 'Hobby: ' },
+          { id: 'level-7', name: '7 Names', numberOfNames: 7, presentationTime: 1400, recallTime: 45, detailHint: true, hintText: 'Job: ' },
+          { id: 'level-8', name: '8 Names', numberOfNames: 8, presentationTime: 1200, recallTime: 50, detailHint: true, hintText: 'City: ' },
+          { id: 'level-9', name: '9 Names', numberOfNames: 9, presentationTime: 1000, recallTime: 55, detailHint: true, hintText: 'Fact: ' },
+          { id: 'level-10', name: '10 Names', numberOfNames: 10, presentationTime: 800, recallTime: 60, detailHint: true, hintText: 'Detail: ' },
         ];
 
         const PERSON_DETAILS = {
@@ -911,12 +911,8 @@
           const { currentPage, navigateTo, currentUser } = useContext(AppContext);
           const { userLoggedIn } = useContext(AuthContext);
 
-          // If the user is not logged in, redirect them to the login page
-          useEffect(() => {
-            if (!userLoggedIn) {
-              window.location.href = 'index.html';
-            }
-          }, [userLoggedIn]);
+          // We don't want to redirect the user again after they have successfully authenticated.
+          // This ensures the application state is maintained and the user can browse normally.
 
           const renderPage = () => {
             switch (currentPage) {
@@ -944,7 +940,7 @@
             React.createElement(
               'main',
               { className: 'flex-grow p-4' },
-              userLoggedIn ? renderPage() : React.createElement('div', { className: 'text-center text-lg mt-10' }, 'Redirecting to login...')
+              userLoggedIn ? renderPage() : React.createElement('div', { className: 'text-center text-lg mt-10' }, 'Please log in to continue.')
             ),
             userLoggedIn && React.createElement(Footer, null)
           );
