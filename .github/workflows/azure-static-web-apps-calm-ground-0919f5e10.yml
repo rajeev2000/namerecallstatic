@@ -3,11 +3,11 @@ name: Azure Static Web Apps CI/CD
 on:
   push:
     branches:
-      - main  # or your deployment branch
+      - master  # or your deployment branch
   pull_request:
     types: [opened, synchronize, reopened, closed]
     branches:
-      - main
+      - master
 
 jobs:
   build_and_deploy:
@@ -26,3 +26,4 @@ jobs:
           output_location: "/"        # Same as app_location
           api_location: ""            # No API in this project
           skip_app_build: true        # Skip Oryx build entirely
+
