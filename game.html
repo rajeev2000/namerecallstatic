@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Game</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        #user-info { font-size: 1.2rem; }
+    </style>
+</head>
+<body>
+
+    <h1>Welcome to the Game!</h1>
+    <div id="user-info">Loading user...</div>
+    <button id="logout-button">Logout</button>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+     const supabaseUrl = 'https://zngivcljmzczywrricuz.supabase.co';
+     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpuZ2l2Y2xqbXpjenl3cnJpY3V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ5Mjg3ODIsImV4cCI6MjA3MDUwNDc4Mn0.LLmMGJkg1LRnttdN8bCyUTTzCZS-U-DxXX3mG9m_2l8';
+     const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
+     const userInfoDiv = document.getElementById('user-info');
+     const logoutButton = document.getElementById('logout-button');
+
+     async function checkUser() {
+       const { data: { session }, error } = await supabaseClient.auth.getSession();
+
+        if (session) {
+          console.log('User Session:', session);
+          const user = session.user;
+          userInfoDiv.textContent = `Hello, ${user.user_metadata.full_name}! Your email is ${user.email}.`;
+        } else {
+          userInfoDiv.textContent = 'You are not logged in. Redirecting to login page...';
+          setTimeout(() => window.location.href = 'index.html', 3000);
+      }
+  }
+
+  logoutButton.addEventListener('click', async () => {
+      const { error } = await supabaseClient.auth.signOut();
+      if (!error) {
+          window.location.href = 'index.html';
+      } else {
+          console.error('Logout failed:', error.message);
+      }
+  });
+
+  checkUser();
+</script>
+
+
+</body>
+</html>
