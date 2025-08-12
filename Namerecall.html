@@ -24,6 +24,15 @@
             to { opacity: 1; transform: translateY(0); }
         }
     </style>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=YOUR_GA_MEASUREMENT_ID"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'YOUR_GA_MEASUREMENT_ID');
+    </script>
 </head>
 <body class="min-h-screen bg-gray-200 font-sans antialiased flex flex-col">
     <div id="root" class="flex-grow flex flex-col"></div>
@@ -37,7 +46,7 @@
         const PEOPLE_DATA = [
           { id: 1, name: 'Alice', imageUrl :'./asset/Alice.jpeg' },
           { id: 2, name: 'Bob', imageUrl: './asset/Bob.jpeg' },
-          { id: 3, name: 'Charlie', imageUrl: './asset/Charlie.jpeg' },
+          { id: 3, name: 3, name: 'Charlie', imageUrl: './asset/Charlie.jpeg' },
           { id: 4, name: 'Diana', imageUrl: './asset/Diana.jpeg' },
           { id: 5, name: 'Eve', imageUrl: './asset/Eve.jpeg' },
           { id: 6, name: 'Frank', imageUrl: './asset/Frank.jpeg' },
@@ -273,15 +282,15 @@
 
           return React.createElement(
             'header',
-            { className: 'bg-blue-800 text-white p-4 shadow-lg rounded-b-lg' },
+            { className: 'bg-blue-800 text-white p-3 md:p-4 shadow-lg rounded-b-lg' },
             React.createElement(
               'nav',
               { className: 'container mx-auto flex justify-between items-center flex-wrap' }, // Added flex-wrap
               React.createElement(
                 'div',
-                { className: 'flex items-center space-x-4 cursor-pointer', onClick: () => navigateTo('home') },
-                React.createElement('img', { src: 'namerecall.jpeg', alt: 'NameRecall Logo', className: 'h-10 w-10 object-contain rounded-full' }),
-                React.createElement('div', { className: 'text-2xl font-bold' }, 'NameRecall Challenge')
+                { className: 'flex items-center space-x-2 cursor-pointer', onClick: () => navigateTo('home') },
+                React.createElement('img', { src: 'namerecall.jpeg', alt: 'NameRecall Logo', className: 'h-8 w-8 md:h-10 md:w-10 object-contain rounded-full' }),
+                React.createElement('div', { className: 'text-lg md:text-2xl font-bold' }, 'NameRecall Challenge')
               ),
               // Mobile menu button
               React.createElement(
@@ -308,16 +317,16 @@
               React.createElement(
                 'ul',
                 { className: `md:flex md:space-x-6 w-full md:w-auto mt-4 md:mt-0 ${isMenuOpen ? 'block' : 'hidden'}` },
-                React.createElement('li', null, React.createElement('button', { onClick: () => { navigateTo('home'); setIsMenuOpen(false); }, className: 'block py-2 px-4 hover:text-blue-200 transition-colors md:inline-block' }, 'Home')),
-                React.createElement('li', null, React.createElement('button', { onClick: () => { navigateTo('howItWorks'); setIsMenuOpen(false); }, className: 'block py-2 px-4 hover:text-blue-200 transition-colors md:inline-block' }, 'How It Works')),
-                React.createElement('li', null, React.createElement('button', { onClick: () => { navigateTo('levelSelection'); setIsMenuOpen(false); }, className: 'block py-2 px-4 hover:text-blue-200 transition-colors md:inline-block' }, 'Play')),
-                React.createElement('li', null, React.createElement('button', { onClick: () => { navigateTo('dashboard'); setIsMenuOpen(false); }, className: 'block py-2 px-4 hover:text-blue-200 transition-colors md:inline-block' }, 'Dashboard')),
+                React.createElement('li', null, React.createElement('button', { onClick: () => { navigateTo('home'); setIsMenuOpen(false); }, className: 'block py-2 px-4 text-sm md:text-base hover:text-blue-200 transition-colors md:inline-block' }, 'Home')),
+                React.createElement('li', null, React.createElement('button', { onClick: () => { navigateTo('howItWorks'); setIsMenuOpen(false); }, className: 'block py-2 px-4 text-sm md:text-base hover:text-blue-200 transition-colors md:inline-block' }, 'How It Works')),
+                React.createElement('li', null, React.createElement('button', { onClick: () => { navigateTo('levelSelection'); setIsMenuOpen(false); }, className: 'block py-2 px-4 text-sm md:text-base hover:text-blue-200 transition-colors md:inline-block' }, 'Play')),
+                React.createElement('li', null, React.createElement('button', { onClick: () => { navigateTo('dashboard'); setIsMenuOpen(false); }, className: 'block py-2 px-4 text-sm md:text-base hover:text-blue-200 transition-colors md:inline-block' }, 'Dashboard')),
                 React.createElement(
                   'li',
                   { className: 'flex items-center space-x-2 mt-2 md:mt-0 md:ml-4' },
-                  React.createElement('span', { className: 'text-blue-200' }, 'Hello, ', currentUser.name, '!'),
+                  React.createElement('span', { className: 'text-blue-200 text-sm md:text-base' }, 'Hello, ', currentUser.name, '!'),
                   currentUser.id !== 'guest' && (
-                    React.createElement('button', { onClick: () => { logout(); setIsMenuOpen(false); }, className: 'text-sm bg-red-500 hover:bg-red-600 px-3 py-1 rounded-full transition-colors' }, 'Logout')
+                    React.createElement('button', { onClick: () => { logout(); setIsMenuOpen(false); }, className: 'text-xs bg-red-500 hover:bg-red-600 px-2 py-1 md:px-3 md:py-1 rounded-full transition-colors' }, 'Logout')
                   )
                 )
               )
@@ -328,10 +337,10 @@
         const Footer = () => {
           return React.createElement(
             'footer',
-            { className: 'bg-gray-800 text-white p-4 mt-8 shadow-inner rounded-t-lg' },
+            { className: 'bg-gray-800 text-white p-3 mt-8 shadow-inner rounded-t-lg' },
             React.createElement(
               'div',
-              { className: 'container mx-auto text-center text-sm' },
+              { className: 'container mx-auto text-center text-xs md:text-sm' },
               '© ',
               new Date().getFullYear(),
               ' NameRecall Challenge. All rights reserved.'
@@ -343,50 +352,50 @@
           const { navigateTo } = useContext(AppContext);
           return React.createElement(
             'div',
-            { className: 'flex flex-col items-center justify-center min-h-[calc(100vh-160px)] bg-gradient-to-br from-blue-100 to-green-100 p-6 rounded-lg shadow-xl' },
+            { className: 'flex flex-col items-center justify-center min-h-[calc(100vh-160px)] bg-gradient-to-br from-blue-100 to-green-100 p-4 md:p-6 rounded-lg shadow-xl' },
             React.createElement(
               'h1',
-              { className: 'text-5xl font-extrabold text-blue-800 mb-6 text-center' },
+              { className: 'text-3xl sm:text-4xl md:text-5xl font-extrabold text-blue-800 mb-4 md:mb-6 text-center leading-tight' },
               'Sharpen Your Memory. ',
               React.createElement('br', null),
               ' Master Names. Instantly.'
             ),
             React.createElement(
               'p',
-              { className: 'text-xl text-gray-700 mb-10 text-center max-w-2xl' },
+              { className: 'text-base md:text-xl text-gray-700 mb-6 md:mb-10 text-center max-w-2xl' },
               'Train your short-term memory with our engaging and interactive name recall challenges. Improve your focus, boost your confidence, and never forget a name again!'
             ),
             React.createElement(
               'button',
               {
                 onClick: () => navigateTo('levelSelection'),
-                className: 'bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 px-8 rounded-full shadow-lg transition-all transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-orange-300'
+                className: 'bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-6 md:py-4 md:px-8 rounded-full shadow-lg transition-all transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-orange-300 text-base md:text-lg'
               },
               'Start Your Memory Journey'
             ),
             React.createElement(
               'div',
-              { className: 'mt-16 grid md:grid-cols-3 gap-8 max-w-4xl' },
+              { className: 'mt-12 md:mt-16 grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 max-w-4xl w-full' },
               React.createElement(
                 'div',
-                { className: 'bg-white p-6 rounded-lg shadow-md text-center' },
-                React.createElement('div', { className: 'text-blue-500 text-4xl mb-4' }, '🧠'),
-                React.createElement('h3', { className: 'text-xl font-semibold text-gray-800 mb-2' }, 'Boost Focus'),
-                React.createElement('p', { className: 'text-gray-600' }, 'Enhance your concentration and attention span.')
+                { className: 'bg-white p-5 rounded-lg shadow-md text-center' },
+                React.createElement('div', { className: 'text-3xl md:text-4xl mb-3 text-blue-500' }, '🧠'),
+                React.createElement('h3', { className: 'text-lg md:text-xl font-semibold text-gray-800 mb-2' }, 'Boost Focus'),
+                React.createElement('p', { className: 'text-sm md:text-base text-gray-600' }, 'Enhance your concentration and attention span.')
               ),
               React.createElement(
                 'div',
-                { className: 'bg-white p-6 rounded-lg shadow-md text-center' },
-                React.createElement('div', { className: 'text-green-500 text-4xl mb-4' }, '🏆'),
-                React.createElement('h3', { className: 'text-xl font-semibold text-gray-800 mb-2' }, 'Track Progress'),
-                React.createElement('p', { className: 'text-gray-600' }, 'Monitor your improvement across various levels.')
+                { className: 'bg-white p-5 rounded-lg shadow-md text-center' },
+                React.createElement('div', { className: 'text-3xl md:text-4xl mb-3 text-green-500' }, '🏆'),
+                React.createElement('h3', { className: 'text-lg md:text-xl font-semibold text-gray-800 mb-2' }, 'Track Progress'),
+                React.createElement('p', { className: 'text-sm md:text-base text-gray-600' }, 'Monitor your improvement across various levels.')
               ),
               React.createElement(
                 'div',
-                { className: 'bg-white p-6 rounded-lg shadow-md text-center' },
-                React.createElement('div', { className: 'text-purple-500 text-4xl mb-4' }, '🤝'),
-                React.createElement('h3', { className: 'text-xl font-semibold text-gray-800 mb-2' }, 'Improve Social Skills'),
-                React.createElement('p', { className: 'text-gray-600' }, 'Gain confidence in remembering new acquaintances.')
+                { className: 'bg-white p-5 rounded-lg shadow-md text-center' },
+                React.createElement('div', { className: 'text-3xl md:text-4xl mb-3 text-purple-500' }, '🤝'),
+                React.createElement('h3', { className: 'text-lg md:text-xl font-semibold text-gray-800 mb-2' }, 'Improve Social Skills'),
+                React.createElement('p', { className: 'text-sm md:text-base text-gray-600' }, 'Gain confidence in remembering new acquaintances.')
               )
             )
           );
@@ -396,45 +405,45 @@
           const { navigateTo } = useContext(AppContext);
           return React.createElement(
             'div',
-            { className: 'flex flex-col items-center justify-center min-h-[calc(100vh-160px)] bg-gray-50 p-6 rounded-lg shadow-xl' },
-            React.createElement('h1', { className: 'text-4xl font-bold text-blue-800 mb-10 text-center' }, 'How the NameRecall Challenge Works'),
+            { className: 'flex flex-col items-center justify-center min-h-[calc(100vh-160px)] bg-gray-50 p-4 md:p-6 rounded-lg shadow-xl' },
+            React.createElement('h1', { className: 'text-3xl sm:text-4xl font-bold text-blue-800 mb-8 md:mb-10 text-center' }, 'How the NameRecall Challenge Works'),
             React.createElement(
               'div',
-              { className: 'grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-5xl' },
+              { className: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 max-w-5xl w-full' },
               React.createElement(
                 'div',
-                { className: 'bg-white p-6 rounded-lg shadow-md text-center flex flex-col items-center' },
-                React.createElement('div', { className: 'text-blue-500 text-5xl mb-4' }, '👁️'),
-                React.createElement('h3', { className: 'text-2xl font-semibold text-gray-800 mb-2' }, 'Step 1: See the Faces & Names'),
-                React.createElement('p', { className: 'text-gray-600' }, 'A series of faces and their names will be presented to you one by one. Pay close attention!')
+                { className: 'bg-white p-5 rounded-lg shadow-md text-center flex flex-col items-center' },
+                React.createElement('div', { className: 'text-4xl md:text-5xl mb-3 text-blue-500' }, '👁️'),
+                React.createElement('h3', { className: 'text-xl md:text-2xl font-semibold text-gray-800 mb-2' }, 'Step 1: See the Faces & Names'),
+                React.createElement('p', { className: 'text-sm md:text-base text-gray-600' }, 'A series of faces and their names will be presented to you one by one. Pay close attention!')
               ),
               React.createElement(
                 'div',
-                { className: 'bg-white p-6 rounded-lg shadow-md text-center flex flex-col items-center' },
-                React.createElement('div', { className: 'text-green-500 text-5xl mb-4' }, '🧠'),
-                React.createElement('h3', { className: 'text-2xl font-semibold text-gray-800 mb-2' }, 'Step 2: Remember & Focus'),
-                React.createElement('p', { className: 'text-gray-600' }, 'Use your memory skills to retain the names. Some levels might include extra details to challenge you.')
+                { className: 'bg-white p-5 rounded-lg shadow-md text-center flex flex-col items-center' },
+                React.createElement('div', { className: 'text-4xl md:text-5xl mb-3 text-green-500' }, '🧠'),
+                React.createElement('h3', { className: 'text-xl md:text-2xl font-semibold text-gray-800 mb-2' }, 'Step 2: Remember & Focus'),
+                React.createElement('p', { className: 'text-sm md:text-base text-gray-600' }, 'Use your memory skills to retain the names. Some levels might include extra details to challenge you.')
               ),
               React.createElement(
                 'div',
-                { className: 'bg-white p-6 rounded-lg shadow-md text-center flex flex-col items-center' },
-                React.createElement('div', { className: 'text-orange-500 text-5xl mb-4' }, '✍️'),
-                React.createElement('h3', { className: 'text-2xl font-semibold text-gray-800 mb-2' }, 'Step 3: Recall & Type'),
-                React.createElement('p', { className: 'text-gray-600' }, 'After the presentation, you\'ll see the faces again. Type in the name you remember for each one.')
+                { className: 'bg-white p-5 rounded-lg shadow-md text-center flex flex-col items-center' },
+                React.createElement('div', { className: 'text-4xl md:text-5xl mb-3 text-orange-500' }, '✍️'),
+                React.createElement('h3', { className: 'text-xl md:text-2xl font-semibold text-gray-800 mb-2' }, 'Step 3: Recall & Type'),
+                React.createElement('p', { className: 'text-sm md:text-base text-gray-600' }, 'After the presentation, you\'ll see the faces again. Type in the name you remember for each one.')
               ),
               React.createElement(
                 'div',
-                { className: 'bg-white p-6 rounded-lg shadow-md text-center flex flex-col items-center' },
-                React.createElement('div', { className: 'text-purple-500 text-5xl mb-4' }, '📈'),
-                React.createElement('h3', { className: 'text-2xl font-semibold text-gray-800 mb-2' }, 'Step 4: Track Your Progress & Improve!'),
-                React.createElement('p', { className: 'text-gray-600' }, 'Get instant feedback on your recall, track your scores, and see yourself improve over time.')
+                { className: 'bg-white p-5 rounded-lg shadow-md text-center flex flex-col items-center' },
+                React.createElement('div', { className: 'text-4xl md:text-5xl mb-3 text-purple-500' }, '📈'),
+                React.createElement('h3', { className: 'text-xl md:text-2xl font-semibold text-gray-800 mb-2' }, 'Step 4: Track Your Progress & Improve!'),
+                React.createElement('p', { className: 'text-sm md:text-base text-gray-600' }, 'Get instant feedback on your recall, track your scores, and see yourself improve over time.')
               )
             ),
             React.createElement(
               'button',
               {
                 onClick: () => navigateTo('levelSelection'),
-                className: 'mt-12 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300'
+                className: 'mt-10 md:mt-12 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-5 md:py-3 md:px-6 rounded-full shadow-lg transition-all transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300 text-base md:text-lg'
               },
               'Ready to Play?'
             )
@@ -460,11 +469,11 @@
 
           return React.createElement(
             'div',
-            { className: 'flex flex-col items-center justify-center min-h-[calc(100vh-160px)] bg-gradient-to-br from-blue-50 to-indigo-100 p-6 rounded-lg shadow-xl' },
-            React.createElement('h1', { className: 'text-4xl font-bold text-blue-800 mb-10 text-center' }, 'Choose Your Challenge Level'),
+            { className: 'flex flex-col items-center justify-center min-h-[calc(100vh-160px)] bg-gradient-to-br from-blue-50 to-indigo-100 p-4 md:p-6 rounded-lg shadow-xl' },
+            React.createElement('h1', { className: 'text-3xl sm:text-4xl font-bold text-blue-800 mb-8 md:mb-10 text-center' }, 'Choose Your Challenge Level'),
             React.createElement(
               'div',
-              { className: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl w-full' },
+              { className: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 max-w-6xl w-full' },
               LEVELS.map(function(level, index) { // Changed to ES5 function
                 const status = getLevelStatus(level.id);
                 const isLocked = status === 'Locked';
@@ -477,15 +486,15 @@
                   'div',
                   {
                     key: level.id,
-                    className: `flex flex-col items-center p-6 rounded-lg shadow-md border-2 ${cardBg} ${cardBorder} transition-all duration-300`
+                    className: `flex flex-col items-center p-5 rounded-lg shadow-md border-2 ${cardBg} ${cardBorder} transition-all duration-300`
                   },
-                  React.createElement('div', { className: `text-5xl font-extrabold mb-4 ${textColor}` }, level.numberOfNames),
-                  React.createElement('h3', { className: `text-2xl font-semibold mb-2 ${textColor}` }, level.name),
+                  React.createElement('div', { className: `text-4xl md:text-5xl font-extrabold mb-3 ${textColor}` }, level.numberOfNames),
+                  React.createElement('h3', { className: `text-xl md:text-2xl font-semibold mb-2 ${textColor}` }, level.name),
                   React.createElement('p', { className: `text-sm mb-4 ${isLocked ? 'text-gray-500' : 'text-gray-600'}` }, status === 'Completed' ? 'Level Completed!' : (status === 'Locked' ? 'Locked' : 'Ready to Play')),
                   userProgress[level.id] && (
                     React.createElement(
                       'div',
-                      { className: 'text-sm text-gray-700 mb-4 text-center' },
+                      { className: 'text-xs md:text-sm text-gray-700 mb-4 text-center' },
                       React.createElement('p', null, 'Best Score: ', userProgress[level.id].bestScore, '/', level.numberOfNames),
                       React.createElement('p', null, 'Attempts: ', userProgress[level.id].attempts)
                     )
@@ -494,7 +503,7 @@
                     'button',
                     {
                       onClick: function() { return !isLocked && navigateTo('game', { level }); }, // Changed to ES5 function
-                      className: `text-white font-bold py-2 px-6 rounded-full shadow-md ${buttonBg} transition-all transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-opacity-75 ${isLocked ? 'focus:ring-gray-300' : (userProgress[level.id] && userProgress[level.id].completed ? 'focus:ring-green-300' : 'focus:ring-blue-300')}`, // Changed optional chaining
+                      className: `text-white font-bold py-2 px-5 rounded-full shadow-md ${buttonBg} transition-all transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-opacity-75 ${isLocked ? 'focus:ring-gray-300' : (userProgress[level.id] && userProgress[level.id].completed ? 'focus:ring-green-300' : 'focus:ring-blue-300')} text-sm md:text-base`,
                       disabled: isLocked
                     },
                     status === 'Completed' ? 'Replay Level' : 'Play Level'
@@ -619,13 +628,13 @@
 
           return React.createElement(
             'div',
-            { className: 'flex flex-col items-center justify-center min-h-[calc(100vh-160px)] bg-gray-50 p-6 rounded-lg shadow-xl' },
+            { className: 'flex flex-col items-center justify-center min-h-[calc(100vh-160px)] bg-gray-50 p-4 md:p-6 rounded-lg shadow-xl' },
             React.createElement(
               'div',
-              { className: 'w-full max-w-3xl bg-white rounded-lg shadow-lg p-8' },
+              { className: 'w-full max-w-3xl bg-white rounded-lg shadow-lg p-6 md:p-8' },
               React.createElement(
                 'div',
-                { className: 'flex justify-between items-center mb-6 text-xl font-semibold text-gray-700' },
+                { className: 'flex justify-between items-center mb-4 md:mb-6 text-base md:text-xl font-semibold text-gray-700' },
                 React.createElement('span', null, 'Level: ', level.name),
                 React.createElement('span', null, phase === 'presentation' ? `Next in: ${timer}s` : `Time left: ${timer}s`)
               ),
@@ -636,22 +645,22 @@
                   React.createElement('img', {
                     src: currentPerson.imageUrl,
                     alt: currentPerson.name,
-                    className: 'w-32 h-32 md:w-40 md:h-40 rounded-full object-cover mb-4 shadow-md border-4 border-blue-300' // Added responsive sizing
+                    className: 'w-28 h-28 sm:w-32 sm:h-32 md:w-40 md:h-40 rounded-full object-cover mb-4 shadow-md border-4 border-blue-300' // Added responsive sizing
                   }),
-                  React.createElement('h2', { className: 'text-4xl font-bold text-blue-700 mb-2' }, currentPerson.name),
+                  React.createElement('h2', { className: 'text-3xl sm:text-4xl font-bold text-blue-700 mb-2' }, currentPerson.name),
                   level.detailHint && currentPerson.detail && (
-                    React.createElement('p', { className: 'text-lg text-gray-600 italic' }, level.hintText || '', currentPerson.detail) // Added hintText
+                    React.createElement('p', { className: 'text-base md:text-lg text-gray-600 italic' }, level.hintText || '', currentPerson.detail) // Added hintText
                   ),
-                  React.createElement('p', { className: 'mt-8 text-gray-500' }, currentPersonIndex + 1, ' / ', namesToRemember.length)
+                  React.createElement('p', { className: 'mt-6 md:mt-8 text-sm md:text-base text-gray-500' }, currentPersonIndex + 1, ' / ', namesToRemember.length)
                 )
               ) : phase === 'recall' ? (
                 React.createElement(
                   'div',
                   { className: 'flex flex-col items-center' },
-                  React.createElement('h2', { className: 'text-3xl font-bold text-blue-700 mb-8 text-center' }, 'Time to Recall!'),
+                  React.createElement('h2', { className: 'text-2xl sm:text-3xl font-bold text-blue-700 mb-6 md:mb-8 text-center' }, 'Time to Recall!'),
                   React.createElement(
                     'div',
-                    { className: 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 w-full' },
+                    { className: 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 w-full' },
                     namesToRemember.map(function(person, index) { // Changed to ES5 function and iterate over namesToRemember
                       return React.createElement(
                         'div',
@@ -659,14 +668,14 @@
                         React.createElement('img', { // Added responsive sizing to recall phase
                           src: person.imageUrl,
                           alt: 'Recall Image',
-                          className: 'w-20 h-20 md:w-24 md:h-24 rounded-full object-cover mb-3 border-2 border-gray-300'
+                          className: 'w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full object-cover mb-2 md:mb-3 border-2 border-gray-300'
                         }),
                         React.createElement('input', {
                           type: 'text',
                           placeholder: 'Type name...',
                           value: userAnswers[index] || '',
                           onChange: function(e) { return handleInputChange(index, e.target.value); }, // Changed to ES5 function
-                          className: 'w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-center text-gray-800'
+                          className: 'w-full p-2 text-sm md:text-base border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-center text-gray-800'
                         })
                       );
                     })
@@ -675,7 +684,7 @@
                     'button',
                     {
                       onClick: handleSubmitAnswers,
-                      className: 'mt-10 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-all transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-300'
+                      className: 'mt-8 md:mt-10 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 md:py-3 md:px-8 rounded-full shadow-lg transition-all transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-300 text-base md:text-lg'
                     },
                     'Submit Answers'
                   )
@@ -693,60 +702,58 @@
 
           const incorrectCount = totalNames - score;
 
-          // Removed the handleShare function entirely
-
           return React.createElement(
             'div',
-            { className: 'flex flex-col items-center justify-center min-h-[calc(100vh-160px)] bg-gradient-to-br from-purple-50 to-pink-50 p-6 rounded-lg shadow-xl' },
+            { className: 'flex flex-col items-center justify-center min-h-[calc(100vh-160px)] bg-gradient-to-br from-purple-50 to-pink-50 p-4 md:p-6 rounded-lg shadow-xl' },
             React.createElement(
               'div',
-              { className: 'w-full max-w-4xl bg-white rounded-lg shadow-lg p-8' },
+              { className: 'w-full max-w-4xl bg-white rounded-lg shadow-lg p-6 md:p-8' },
               React.createElement(
                 'h1',
-                { className: 'text-4xl font-bold text-center mb-6' },
+                { className: 'text-3xl sm:text-4xl font-bold text-center mb-5 md:mb-6' },
                 score === totalNames ? React.createElement('span', { className: 'text-green-600' }, 'Challenge Complete! 🎉') : React.createElement('span', { className: 'text-red-600' }, 'Challenge Ended! Try Again! 😔')
               ),
               React.createElement(
                 'div',
-                { className: 'grid grid-cols-1 md:grid-cols-3 gap-4 text-center text-lg mb-8' },
+                { className: 'grid grid-cols-1 sm:grid-cols-3 gap-4 text-center text-base md:text-lg mb-6 md:mb-8' },
                 React.createElement(
                   'div',
                   { className: 'p-4 bg-blue-50 rounded-lg shadow-sm' },
                   React.createElement('p', { className: 'text-blue-700 font-semibold' }, 'Correct:'),
-                  React.createElement('p', { className: 'text-2xl text-blue-800' }, score, '/', totalNames)
+                  React.createElement('p', { className: 'text-2xl md:text-3xl text-blue-800' }, score, '/', totalNames)
                 ),
                 React.createElement(
                   'div',
                   { className: 'p-4 bg-red-50 rounded-lg shadow-sm' },
                   React.createElement('p', { className: 'text-red-700 font-semibold' }, 'Incorrect:'),
-                  React.createElement('p', { className: 'text-2xl text-red-800' }, incorrectCount)
+                  React.createElement('p', { className: 'text-2xl md:text-3xl text-red-800' }, incorrectCount)
                 ),
                 React.createElement(
                   'div',
                   { className: 'p-4 bg-yellow-50 rounded-lg shadow-sm' },
                   React.createElement('p', { className : 'text-yellow-700 font-semibold' }, 'Time Taken:'),
-                  React.createElement('p', { className: 'text-2xl text-yellow-800' }, timeTaken, 's')
+                  React.createElement('p', { className: 'text-2xl md:text-3xl text-yellow-800' }, timeTaken, 's')
                 )
               ),
-              React.createElement('h2', { className: 'text-2xl font-semibold text-gray-800 mb-4 text-center' }, 'Detailed Results'),
+              React.createElement('h2', { className: 'text-xl md:text-2xl font-semibold text-gray-800 mb-4 text-center' }, 'Detailed Results'),
               React.createElement(
                 'div',
-                { className: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8' },
+                { className: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8' },
                 results.map(function(item, index) { // Changed to ES5 function
                   return React.createElement(
                     'div',
                     {
                       key: index,
-                      className: `p-4 rounded-lg shadow-sm flex items-center space-x-4 ${item.isCorrect ? 'bg-green-50 border border-green-300' : 'bg-red-50 border border-red-300'}`
+                      className: `p-3 rounded-lg shadow-sm flex items-center space-x-3 ${item.isCorrect ? 'bg-green-50 border border-green-300' : 'bg-red-50 border border-red-300'}`
                     },
                     React.createElement('img', {
                       src: item.person.imageUrl,
                       alt: item.person.name,
-                      className: 'w-16 h-16 rounded-full object-cover'
+                      className: 'w-14 h-14 rounded-full object-cover'
                     }),
                     React.createElement(
                       'div',
-                      { className: 'flex-1' },
+                      { className: 'flex-1 text-sm' },
                       React.createElement('p', { className: 'font-semibold text-gray-800' }, 'Original: ', item.person.name),
                       React.createElement(
                         'p',
@@ -755,18 +762,18 @@
                         React.createElement('span', { className: `${item.isCorrect ? 'text-green-700' : 'text-red-700 font-bold'}` }, item.userAnswer || '[No Answer]')
                       )
                     ),
-                    React.createElement('div', { className: 'text-2xl' }, item.isCorrect ? '✅' : '❌')
+                    React.createElement('div', { className: 'text-xl md:text-2xl' }, item.isCorrect ? '✅' : '❌')
                   );
                 })
               ),
               React.createElement(
                 'div',
-                { className: 'flex justify-center space-x-4 mt-8' },
+                { className: 'flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4 mt-8' },
                 React.createElement(
                   'button',
                   {
                     onClick: function() { return navigateTo('game', { level: level }); }, // Changed to ES5 function
-                    className: 'bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300'
+                    className: 'bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-5 rounded-full shadow-lg transition-all transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300 text-base md:text-lg'
                   },
                   'Play Level Again'
                 ),
@@ -774,7 +781,7 @@
                   'button',
                   {
                     onClick: function() { return navigateTo('levelSelection'); }, // Changed to ES5 function
-                    className: 'bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-gray-300'
+                    className: 'bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-5 rounded-full shadow-lg transition-all transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-gray-300 text-base md:text-lg'
                   },
                   'Back to Levels'
                 ),
@@ -782,7 +789,7 @@
                   'button',
                   {
                     onClick: function() { return navigateTo('dashboard'); },
-                    className: 'bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-purple-300'
+                    className: 'bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-5 rounded-full shadow-lg transition-all transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-purple-300 text-base md:text-lg'
                   },
                   'View Dashboard'
                 )
@@ -840,71 +847,71 @@
 
           return React.createElement(
             'div',
-            { className: 'flex flex-col items-center min-h-[calc(100vh-160px)] bg-gray-100 p-6 rounded-lg shadow-xl' },
+            { className: 'flex flex-col items-center min-h-[calc(100vh-160px)] bg-gray-100 p-4 md:p-6 rounded-lg shadow-xl' },
             React.createElement(
               'div',
-              { className: 'w-full max-w-5xl bg-white rounded-lg shadow-lg p-8' },
+              { className: 'w-full max-w-5xl bg-white rounded-lg shadow-lg p-6 md:p-8' },
               React.createElement(
                 'h1',
-                { className: 'text-4xl font-bold text-blue-800 mb-8 text-center' },
+                { className: 'text-3xl sm:text-4xl font-bold text-blue-800 mb-6 md:mb-8 text-center' },
                 'Welcome Back, ',
                 currentUser.name,
                 '!'
               ),
               React.createElement(
                 'div',
-                { className: 'grid grid-cols-1 md:grid-cols-3 gap-6 mb-10 text-center' },
+                { className: 'grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8 md:mb-10 text-center' },
                 React.createElement(
                   'div',
-                  { className: 'bg-blue-50 p-6 rounded-lg shadow-sm border-b-4 border-blue-400' },
-                  React.createElement('p', { className: 'text-blue-700 text-lg font-semibold' }, 'Levels Completed'),
-                  React.createElement('p', { className: 'text-4xl font-extrabold text-blue-800' }, totalLevelsCompleted, '/', LEVELS.length)
+                  { className: 'bg-blue-50 p-4 md:p-6 rounded-lg shadow-sm border-b-4 border-blue-400' },
+                  React.createElement('p', { className: 'text-blue-700 text-base md:text-lg font-semibold' }, 'Levels Completed'),
+                  React.createElement('p', { className: 'text-3xl md:text-4xl font-extrabold text-blue-800' }, totalLevelsCompleted, '/', LEVELS.length)
                 ),
                 React.createElement(
                   'div',
-                  { className: 'bg-green-50 p-6 rounded-lg shadow-sm border-b-4 border-green-400' },
-                  React.createElement('p', { className: 'text-green-700 text-lg font-semibold' }, 'Total Attempts'),
-                  React.createElement('p', { className: 'text-4xl font-extrabold text-green-800' }, totalAttempts)
+                  { className: 'bg-green-50 p-4 md:p-6 rounded-lg shadow-sm border-b-4 border-green-400' },
+                  React.createElement('p', { className: 'text-green-700 text-base md:text-lg font-semibold' }, 'Total Attempts'),
+                  React.createElement('p', { className: 'text-3xl md:text-4xl font-extrabold text-green-800' }, totalAttempts)
                 ),
                 React.createElement(
                   'div',
-                  { className: 'bg-purple-50 p-6 rounded-lg shadow-sm border-b-4 border-purple-400' },
-                  React.createElement('p', { className: 'text-purple-700 text-lg font-semibold' }, 'Total Score'),
-                  React.createElement('p', { className: 'text-4xl font-extrabold text-purple-800' }, totalScore)
+                  { className: 'bg-purple-50 p-4 md:p-6 rounded-lg shadow-sm border-b-4 border-purple-400' },
+                  React.createElement('p', { className: 'text-purple-700 text-base md:text-lg font-semibold' }, 'Total Score'),
+                  React.createElement('p', { className: 'text-3xl md:text-4xl font-extrabold text-purple-800' }, totalScore)
                 )
               ),
               React.createElement(
                 'div',
-                { className: 'grid grid-cols-1 lg:grid-cols-2 gap-8' },
+                { className: 'grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8' },
                 React.createElement(
                   'div',
-                  { className: 'bg-gray-50 p-6 rounded-lg shadow-md' },
-                  React.createElement('h2', { className: 'text-2xl font-semibold text-gray-800 mb-4' }, 'Your Progress'),
+                  { className: 'bg-gray-50 p-5 rounded-lg shadow-md' },
+                  React.createElement('h2', { className: 'text-xl md:text-2xl font-semibold text-gray-800 mb-4' }, 'Your Progress'),
                   React.createElement(
                     'div',
                     { className: 'space-y-3' },
                     progressData.map(function(data, index) { // Changed to ES5 function
                       return React.createElement(
                         'div',
-                        { key: index, className: 'flex items-center space-x-4' },
-                        React.createElement('span', { className: 'font-medium text-gray-700 w-24' }, data.levelName, ':'),
+                        { key: index, className: 'flex items-center space-x-3' },
+                        React.createElement('span', { className: 'font-medium text-gray-700 w-20 sm:w-24 text-sm md:text-base' }, data.levelName, ':'),
                         React.createElement(
                           'div',
-                          { className: 'flex-1 bg-gray-200 rounded-full h-4' },
+                          { className: 'flex-1 bg-gray-200 rounded-full h-3 md:h-4' },
                           React.createElement('div', {
-                            className: 'bg-blue-500 h-4 rounded-full transition-all duration-500',
+                            className: 'bg-blue-500 h-3 md:h-4 rounded-full transition-all duration-500',
                             style: { width: `${data.accuracy}%` }
                           })
                         ),
-                        React.createElement('span', { className: 'text-gray-600 w-12 text-right' }, data.accuracy.toFixed(0), '%')
+                        React.createElement('span', { className: 'text-gray-600 w-10 text-right text-sm md:text-base' }, data.accuracy.toFixed(0), '%')
                       );
                     })
                   )
                 ),
                 React.createElement(
                   'div',
-                  { className: 'bg-gray-50 p-6 rounded-lg shadow-md' },
-                  React.createElement('h2', { className: 'text-2xl font-semibold text-gray-800 mb-4' }, 'Recent Activity'),
+                  { className: 'bg-gray-50 p-5 rounded-lg shadow-md' },
+                  React.createElement('h2', { className: 'text-xl md:text-2xl font-semibold text-gray-800 mb-4' }, 'Recent Activity'),
                   recentActivity.length > 0 ? (
                     React.createElement(
                       'ul',
@@ -912,20 +919,20 @@
                       recentActivity.map(function(activity, index) { // Changed to ES5 function
                         return React.createElement(
                           'li',
-                          { key: index, className: 'flex justify-between items-center text-gray-700 p-2 bg-white rounded-md shadow-sm' },
+                          { key: index, className: 'flex justify-between items-center text-gray-700 p-2 bg-white rounded-md shadow-sm text-sm md:text-base' },
                           React.createElement('span', null, activity.level, ' - Score: ', activity.score, '/', activity.total),
-                          React.createElement('span', { className: 'text-sm text-gray-500' }, activity.date)
+                          React.createElement('span', { className: 'text-xs md:text-sm text-gray-500' }, activity.date)
                         );
                       })
                     )
                   ) : (
-                    React.createElement('p', { className: 'text-gray-500 italic' }, 'No recent activity. Start playing!')
+                    React.createElement('p', { className: 'text-gray-500 italic text-sm md:text-base' }, 'No recent activity. Start playing!')
                   )
                 ),
                 React.createElement(
                   'div',
-                  { className: 'lg:col-span-2 bg-gray-50 p-6 rounded-lg shadow-md' },
-                  React.createElement('h2', { className: 'text-2xl font-semibold text-gray-800 mb-4' }, 'Personal Bests'),
+                  { className: 'lg:col-span-2 bg-gray-50 p-5 rounded-lg shadow-md' },
+                  React.createElement('h2', { className: 'text-xl md:text-2xl font-semibold text-gray-800 mb-4' }, 'Personal Bests'),
                   personalBests.length > 0 ? (
                     React.createElement(
                       'div',
@@ -938,41 +945,41 @@
                           null,
                           React.createElement(
                             'tr',
-                            { className: 'bg-gray-200 text-gray-700 uppercase text-sm leading-normal' },
-                            React.createElement('th', { className: 'py-3 px-6 text-left rounded-tl-lg' }, 'Level'),
-                            React.createElement('th', { className: 'py-3 px-6 text-left' }, 'Best Score'),
-                            React.createElement('th', { className: 'py-3 px-6 text-left rounded-tr-lg' }, 'Best Time')
+                            { className: 'bg-gray-200 text-gray-700 uppercase text-xs md:text-sm leading-normal' },
+                            React.createElement('th', { className: 'py-2 px-4 md:py-3 md:px-6 text-left rounded-tl-lg' }, 'Level'),
+                            React.createElement('th', { className: 'py-2 px-4 md:py-3 md:px-6 text-left' }, 'Best Score'),
+                            React.createElement('th', { className: 'py-2 px-4 md:py-3 md:px-6 text-left rounded-tr-lg' }, 'Best Time')
                           )
                         )
                         ,
                         React.createElement(
                           'tbody',
-                          { className: 'text-gray-600 text-sm font-light' },
+                          { className: 'text-gray-600 text-sm md:text-base font-light' },
                           personalBests.map(function(best, index) { // Changed to ES5 function
                             return React.createElement(
                               'tr',
                               { key: index, className: 'border-b border-gray-200 hover:bg-gray-100' },
-                              React.createElement('td', { className: 'py-3 px-6 text-left whitespace-nowrap' }, best.level),
-                              React.createElement('td', { className: 'py-3 px-6 text-left' }, best.bestScore),
-                              React.createElement('td', { className: 'py-3 px-6 text-left' }, best.bestTime)
+                              React.createElement('td', { className: 'py-2 px-4 md:py-3 md:px-6 text-left whitespace-nowrap' }, best.level),
+                              React.createElement('td', { className: 'py-2 px-4 md:py-3 md:px-6 text-left' }, best.bestScore),
+                              React.createElement('td', { className: 'py-2 px-4 md:py-3 md:px-6 text-left' }, best.bestTime)
                             );
                           })
                         )
                       )
                     )
                   ) : (
-                    React.createElement('p', { className: 'text-gray-500 italic' }, 'No personal bests yet. Keep playing to set new records!')
+                    React.createElement('p', { className: 'text-gray-500 italic text-sm md:text-base' }, 'No personal bests yet. Keep playing to set new records!')
                   )
                 )
               ),
               React.createElement(
                 'div',
-                { className: 'flex justify-center space-x-4 mt-10' },
+                { className: 'flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4 mt-8 md:mt-10' },
                 React.createElement(
                   'button',
                   {
                     onClick: function() { return navigateTo('levelSelection'); }, // Changed to ES5 function
-                    className: 'bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-300'
+                    className: 'bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-5 rounded-full shadow-lg transition-all transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-300 text-base md:text-lg'
                   },
                   'Play New Challenge'
                 ),
@@ -980,7 +987,7 @@
                   'button',
                   {
                     onClick: function() { return navigateTo('home'); }, // Navigates to the Dashboard
-                    className: 'bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300'
+                    className: 'bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-5 rounded-full shadow-lg transition-all transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300 text-base md:text-lg'
                   },
                   'Go Home' // Changed to "Go Home"
                 )
