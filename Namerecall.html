@@ -227,7 +227,7 @@
 
               const completed = score === totalNames;
               const newBestScore = Math.max(currentLevelProgress.bestScore, score);
-              const newBestTime = (score > currentLevelProgress.bestScore || (score === currentLevelProgress.bestScore && timeTaken < currentLevelProgress.bestTime)) ? timeTaken : currentLevelProgress.bestTime;
+              const newBestTime = (score > currentLevelProgress.bestScore || (score === currentLevelProgress.bestScore && timeTaken < currentLevel.bestTime)) ? timeTaken : currentLevelProgress.bestTime;
               const newAttempts = currentLevelProgress.attempts + 1;
               const newTotalScore = currentLevelProgress.totalScore + score;
               
@@ -1041,13 +1041,14 @@
               'main',
               { className: 'flex-grow p-4' },
               userLoggedIn ? renderPage() : React.createElement('div', { className: 'text-center text-lg mt-10' }, 'Please log in to continue. You will be redirected to the login page shortly.'),
-              !userLoggedIn && (
+              // Only trigger redirect if NOT logged in AND Supabase has finished checking the session
+              !userLoggedIn && supabaseReady && (
                 useEffect(() => {
                   const redirectTimeout = setTimeout(() => {
                     window.location.href = 'index.html'; // Redirect to login page after a delay
                   }, 3000); // 3-second delay
                   return () => clearTimeout(redirectTimeout);
-                }, [])
+                }, [userLoggedIn, supabaseReady]) // Dependencies to re-run effect if these change
               )
             ),
             userLoggedIn && React.createElement(Footer, null)
