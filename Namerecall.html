@@ -8,7 +8,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom-client.development.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
         body {
@@ -32,7 +31,7 @@
     <script type="text/javascript">
         // Global React and ReactDOM are now available from the CDN scripts
         const { useState, useEffect, createContext, useContext, useCallback } = React;
-        const ReactDOMClient = window.ReactDOMClient;
+        const ReactDOM = window.ReactDOM;
 
         // --- Data Simulation ---
         const PEOPLE_DATA = [
@@ -75,43 +74,95 @@
         const AuthProvider = ({ children }) => {
           const [userEmail, setUserEmail] = useState(null);
           const [userLoggedIn, setUserLoggedIn] = useState(false);
+          // Add a state to track if Supabase client is ready
+          const [supabaseReady, setSupabaseReady] = useState(false);
 
+          // Listen for authentication state changes from `auth.js`
           useEffect(() => {
-            const handleAuthStateChange = (event, session) => {
-              if (session && session.user) {
-                setUserEmail(session.user.email);
-                setUserLoggedIn(true);
-              } else {
-                setUserEmail(null);
-                setUserLoggedIn(false);
-              }
-            };
+            // Wait for window.supabaseClient to be available
+            if (window.supabaseClient) {
+              setSupabaseReady(true);
+              const { data: { subscription } } = window.supabaseClient.auth.onAuthStateChange((event, session) => {
+                if (session && session.user) {
+                  setUserEmail(session.user.email);
+                  setUserLoggedIn(true);
+                } else {
+                  setUserEmail(null);
+                  setUserLoggedIn(false);
+                }
+              });
+              // Initial check in case user is already logged in
+              window.supabaseClient.auth.getSession().then(({ data: { session } }) => {
+                if (session && session.user) {
+                  setUserEmail(session.user.email);
+                  setUserLoggedIn(true);
+                }
+              });
 
-            if (window.supabase) {
-              // Load existing session on first mount
-              window.supabase.auth.getSession().then(({ data: { session } }) => {
-                handleAuthStateChange('INITIAL_SESSION', session);
-              }).catch(() => {});
-
-              const { data: { subscription } } = window.supabase.auth.onAuthStateChange(handleAuthStateChange);
-              return () => subscription.unsubscribe();
+              return () => {
+                if (subscription) {
+                    subscription.unsubscribe();
+                }
+              };
+            } else {
+              // Fallback for when window.supabaseClient is not immediately available
+              // This might happen if auth.js loads slightly after Namerecall.html's script
+              const checkSupabase = setInterval(() => {
+                if (window.supabaseClient) {
+                  clearInterval(checkSupabase);
+                  setSupabaseReady(true);
+                  const { data: { subscription } } = window.supabaseClient.auth.onAuthStateChange((event, session) => {
+                    if (session && session.user) {
+                      setUserEmail(session.user.email);
+                      setUserLoggedIn(true);
+                    } else {
+                      setUserEmail(null);
+                      setUserLoggedIn(false);
+                    }
+                  });
+                  window.supabaseClient.auth.getSession().then(({ data: { session } }) => {
+                    if (session && session.user) {
+                      setUserEmail(session.user.email);
+                      setUserLoggedIn(true);
+                    }
+                  });
+                  return () => {
+                    if (subscription) {
+                        subscription.unsubscribe();
+                    }
+                  };
+                }
+              }, 100); // Check every 100ms
+              return () => clearInterval(checkSupabase); // Clean up interval on unmount
             }
           }, []);
 
+          // Logout function now calls the Supabase/auth.js method
           const logout = useCallback(async () => {
-            if (window.supabase) {
-              const { error } = await window.supabase.auth.signOut();
+            if (window.supabaseClient) {
+              const { error } = await window.supabaseClient.auth.signOut();
               if (error) {
                 console.error("Logout failed:", error);
+                // Use a custom message box instead of alert()
+                const messageBox = document.createElement('div');
+                messageBox.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+                messageBox.innerHTML = `
+                  <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm text-center">
+                    <h3 class="text-xl font-bold text-red-600 mb-4">Logout Error</h3>
+                    <p class="text-gray-700 mb-6">${error.message || JSON.stringify(error)}</p>
+                    <button onclick="this.parentElement.parentElement.remove()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full">OK</button>
+                  </div>
+                `;
+                document.body.appendChild(messageBox);
               } else {
-                window.location.href = 'index.html';
+                window.location.href = 'index.html'; // Redirect to login page
               }
             }
           }, []);
 
           return React.createElement(
             AuthContext.Provider,
-            { value: { userEmail, userLoggedIn, logout } },
+            { value: { userEmail, userLoggedIn, logout, supabaseReady } }, // Pass supabaseReady state
             children
           );
         };
@@ -120,39 +171,29 @@
         const AppContext = createContext();
 
         const AppProvider = ({ children }) => {
-          const { userEmail, userLoggedIn } = useContext(AuthContext);
+          const { userEmail, userLoggedIn, supabaseReady } = useContext(AuthContext); // Get supabaseReady
+          // Only define currentUser if supabaseReady and userLoggedIn
+          const currentUser = (supabaseReady && userLoggedIn) ? { id: userEmail, name: userEmail.split('@')[0] } : { id: 'guest', name: 'Guest' };
+
+          // Declare currentPage as a state variable
           const [currentPage, setCurrentPage] = useState('home');
-          const currentUser = userLoggedIn ? { id: userEmail, name: userEmail.split('@')[0] } : { id: 'guest', name: 'Guest' };
 
           const [userProgress, setUserProgress] = useState(() => {
-            const savedProgress = localStorage.getItem(`nameRecallProgress_${currentUser.id}`);
-            return savedProgress ? JSON.parse(savedProgress) : {};
+            // Lazily initialize userProgress only after auth is ready and user is known
+            if (supabaseReady && userLoggedIn && currentUser.id !== 'guest') {
+                const savedProgress = localStorage.getItem(`nameRecallProgress_${currentUser.id}`);
+                return savedProgress ? JSON.parse(savedProgress) : {};
+            }
+            return {}; // Return empty object if not ready or guest
           });
 
-          // On user change (guest -> logged in or between users), load their stored progress.
+          // Effect to save progress to localStorage
           useEffect(() => {
-            const key = `nameRecallProgress_${currentUser.id}`;
-            const savedForUser = localStorage.getItem(key);
-
-            if (savedForUser) {
-              setUserProgress(JSON.parse(savedForUser));
-            } else {
-              // Migrate guest progress on first login
-              const guestKey = 'nameRecallProgress_guest';
-              const guestProgress = localStorage.getItem(guestKey);
-              if (currentUser.id !== 'guest' && guestProgress) {
-                localStorage.setItem(key, guestProgress);
-                setUserProgress(JSON.parse(guestProgress));
-              } else {
-                setUserProgress({});
-              }
+            if (supabaseReady && userLoggedIn && currentUser.id !== 'guest') {
+                localStorage.setItem(`nameRecallProgress_${currentUser.id}`, JSON.stringify(userProgress));
             }
-          }, [currentUser.id]);
+          }, [userProgress, currentUser.id, userLoggedIn, supabaseReady]);
 
-          // Persist whenever progress or user changes
-          useEffect(() => {
-            localStorage.setItem(`nameRecallProgress_${currentUser.id}`, JSON.stringify(userProgress));
-          }, [userProgress, currentUser.id]);
 
           const navigateTo = useCallback((page, data = null) => {
             setCurrentPage(page);
@@ -176,6 +217,7 @@
                 completed: false,
               };
 
+              // Create a new object for newProgress to avoid spread syntax
               const newProgress = {};
               for (var key in prevProgress) {
                   if (prevProgress.hasOwnProperty(key)) {
@@ -203,7 +245,7 @@
 
           return React.createElement(
             AppContext.Provider,
-            { value: { currentPage, navigateTo, currentUser, userProgress, updateProgress, currentGameData } },
+            { value: { currentPage, navigateTo, currentUser, userProgress, updateProgress, currentGameData, supabaseReady, userLoggedIn } }, // Pass currentPage, supabaseReady and userLoggedIn
             children
           );
         };
@@ -370,7 +412,7 @@
             if (progress && progress.completed) {
               return 'Completed';
             }
-            const levelIndex = LEVELS.findIndex(function(l) { return l.id === levelId; });
+            const levelIndex = LEVELS.findIndex(function(l) { return l.id === levelId; }); // Changed to ES5 function
             if (levelIndex === 0) return 'Unlocked';
             const prevLevel = LEVELS[levelIndex - 1];
             if (userProgress[prevLevel.id] && userProgress[prevLevel.id].completed) {
@@ -386,13 +428,13 @@
             React.createElement(
               'div',
               { className: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl w-full' },
-              LEVELS.map(function(level, index) {
+              LEVELS.map(function(level, index) { // Changed to ES5 function
                 const status = getLevelStatus(level.id);
                 const isLocked = status === 'Locked';
-                const cardBg = isLocked ? 'bg-gray-200' : (userProgress[level.id] && userProgress[level.id].completed ? 'bg-green-100' : 'bg-blue-100');
-                const cardBorder = isLocked ? 'border-gray-300' : (userProgress[level.id] && userProgress[level.id].completed ? 'border-green-400' : 'border-blue-400');
+                const cardBg = isLocked ? 'bg-gray-200' : (userProgress[level.id] && userProgress[level.id].completed ? 'bg-green-100' : 'bg-blue-100'); // Changed optional chaining
+                const cardBorder = isLocked ? 'border-gray-300' : (userProgress[level.id] && userProgress[level.id].completed ? 'border-green-400' : 'border-blue-400'); // Changed optional chaining
                 const textColor = isLocked ? 'text-gray-500' : 'text-blue-800';
-                const buttonBg = isLocked ? 'bg-gray-400 cursor-not-allowed' : (userProgress[level.id] && userProgress[level.id].completed ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700');
+                const buttonBg = isLocked ? 'bg-gray-400 cursor-not-allowed' : (userProgress[level.id] && userProgress[level.id].completed ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'); // Changed optional chaining
 
                 return React.createElement(
                   'div',
@@ -414,8 +456,8 @@
                   React.createElement(
                     'button',
                     {
-                      onClick: function() { return !isLocked && navigateTo('game', { level }); },
-                      className: `text-white font-bold py-2 px-6 rounded-full shadow-md ${buttonBg} transition-all transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-opacity-75 ${isLocked ? 'focus:ring-gray-300' : (userProgress[level.id] && userProgress[level.id].completed ? 'focus:ring-green-300' : 'focus:ring-blue-300')}`,
+                      onClick: function() { return !isLocked && navigateTo('game', { level }); }, // Changed to ES5 function
+                      className: `text-white font-bold py-2 px-6 rounded-full shadow-md ${buttonBg} transition-all transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-opacity-75 ${isLocked ? 'focus:ring-gray-300' : (userProgress[level.id] && userProgress[level.id].completed ? 'focus:ring-green-300' : 'focus:ring-blue-300')}`, // Changed optional chaining
                       disabled: isLocked
                     },
                     status === 'Completed' ? 'Replay Level' : 'Play Level'
@@ -437,14 +479,14 @@
           const [timer, setTimer] = useState(level.presentationTime / 1000);
           const [startTime, setStartTime] = useState(null);
 
-          const handleSubmitAnswers = useCallback(function() {
+          const handleSubmitAnswers = useCallback(function() { // Changed to ES5 function
             const endTime = Date.now();
             const timeTaken = Math.round((endTime - startTime) / 1000);
 
             let correctCount = 0;
-            const correctNamesPool = namesToRemember.map(function(p) { return p.name.toLowerCase(); });
+            const correctNamesPool = namesToRemember.map(function(p) { return p.name.toLowerCase(); }); // Changed to ES5 function
             const results = [];
-            const tempUserAnswers = userAnswers.slice();
+            const tempUserAnswers = userAnswers.slice(); // Use slice to create a copy
 
             for (let i = 0; i < tempUserAnswers.length; i++) {
               const userAnswer = tempUserAnswers[i].toLowerCase().trim();
@@ -465,8 +507,8 @@
               }
             }
 
-            namesToRemember.forEach(function(person) {
-              if (!results.some(function(r) { return r.person.id === person.id && r.isCorrect; })) {
+            namesToRemember.forEach(function(person) { // Changed to ES5 function
+              if (!results.some(function(r) { return r.person.id === person.id && r.isCorrect; })) { // Changed to ES5 function
                 results.push({
                   person: person,
                   userAnswer: '',
@@ -475,16 +517,16 @@
               }
             });
 
-            results.sort(function(a, b) { return a.person.id - b.person.id; });
+            results.sort(function(a, b) { return a.person.id - b.person.id; }); // Changed to ES5 function
 
             updateProgress(level.id, correctCount, level.numberOfNames, timeTaken);
-            navigateTo('results', { level: level, results: results, score: correctCount, totalNames: level.numberOfNames, timeTaken: timeTaken });
+            navigateTo('results', { level: level, results: results, score: correctCount, totalNames: level.numberOfNames, timeTaken: timeTaken }); // Explicitly define object properties
           }, [level, namesToRemember, userAnswers, updateProgress, navigateTo, startTime]);
 
 
-          useEffect(function() {
-            const shuffledPeople = PEOPLE_DATA.sort(function() { return 0.5 - Math.random(); }).slice(0, level.numberOfNames);
-            setNamesToRemember(shuffledPeople.map(function(p) {
+          useEffect(function() { // Changed to ES5 function
+            const shuffledPeople = PEOPLE_DATA.sort(function() { return 0.5 - Math.random(); }).slice(0, level.numberOfNames); // Changed to ES5 function
+            setNamesToRemember(shuffledPeople.map(function(p) { // Changed to ES5 function
               return {
                 id: p.id,
                 name: p.name,
@@ -496,18 +538,18 @@
             setUserAnswers(Array(level.numberOfNames).fill(''));
           }, [level]);
 
-          useEffect(function() {
+          useEffect(function() { // Changed to ES5 function
             if (phase === 'presentation' && namesToRemember.length > 0 && currentPersonIndex < namesToRemember.length) {
-              const interval = setInterval(function() {
-                setTimer(function(prev) { return prev - 1; });
+              const interval = setInterval(function() { // Changed to ES5 function
+                setTimer(function(prev) { return prev - 1; }); // Changed to ES5 function
               }, 1000);
 
-              const timeout = setTimeout(function() {
-                setCurrentPersonIndex(function(prev) { return prev + 1; });
+              const timeout = setTimeout(function() { // Changed to ES5 function
+                setCurrentPersonIndex(function(prev) { return prev + 1; }); // Changed to ES5 function
                 setTimer(level.presentationTime / 1000);
               }, level.presentationTime);
 
-              return function() {
+              return function() { // Changed to ES5 function
                 clearInterval(interval);
                 clearTimeout(timeout);
               };
@@ -517,20 +559,20 @@
             }
           }, [phase, currentPersonIndex, namesToRemember, level.presentationTime, level.recallTime]);
 
-          useEffect(function() {
+          useEffect(function() { // Changed to ES5 function
             if (phase === 'recall' && timer > 0) {
-              const interval = setInterval(function() {
-                setTimer(function(prev) { return prev - 1; });
+              const interval = setInterval(function() { // Changed to ES5 function
+                setTimer(function(prev) { return prev - 1; }); // Changed to ES5 function
               }, 1000);
-              return function() { clearInterval(interval); };
+              return function() { clearInterval(interval); }; // Changed to ES5 function
             } else if (phase === 'recall' && timer === 0) {
               handleSubmitAnswers();
             }
           }, [phase, timer, handleSubmitAnswers]);
 
           const handleInputChange = (index, value) => {
-            setUserAnswers(function(prev) {
-              const newAnswers = prev.slice();
+            setUserAnswers(function(prev) { // Changed to ES5 function
+              const newAnswers = prev.slice(); // Use slice to create a copy
               newAnswers[index] = value;
               return newAnswers;
             });
@@ -554,9 +596,14 @@
                 React.createElement(
                   'div',
                   { className: 'flex flex-col items-center animate-fade-in' },
+                  React.createElement('img', {
+                    src: currentPerson.imageUrl,
+                    alt: currentPerson.name,
+                    className: 'w-40 h-40 rounded-full object-cover mb-4 shadow-md border-4 border-blue-300' // Added image and styling
+                  }),
                   React.createElement('h2', { className: 'text-4xl font-bold text-blue-700 mb-2' }, currentPerson.name),
                   level.detailHint && currentPerson.detail && (
-                    React.createElement('p', { className: 'text-lg text-gray-600 italic' }, currentPerson.detail)
+                    React.createElement('p', { className: 'text-lg text-gray-600 italic' }, level.hintText || '', currentPerson.detail) // Added hintText
                   ),
                   React.createElement('p', { className: 'mt-8 text-gray-500' }, currentPersonIndex + 1, ' / ', namesToRemember.length)
                 )
@@ -568,21 +615,20 @@
                   React.createElement(
                     'div',
                     { className: 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 w-full' },
-                    Array.from({ length: level.numberOfNames }).map(function(_, index) {
+                    namesToRemember.map(function(person, index) { // Changed to ES5 function and iterate over namesToRemember
                       return React.createElement(
                         'div',
-                        { key: index, className: 'flex flex-col items-center' },
-                        React.createElement(
-                          'div',
-                          { className: 'w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center mb-3 border-2 border-gray-300 text-gray-600 text-sm' },
-                          'Input ',
-                          index + 1
-                        ),
+                        { key: person.id, className: 'flex flex-col items-center' },
+                        React.createElement('img', { // Added image to recall phase
+                          src: person.imageUrl,
+                          alt: 'Recall Image',
+                          className: 'w-24 h-24 rounded-full object-cover mb-3 border-2 border-gray-300'
+                        }),
                         React.createElement('input', {
                           type: 'text',
                           placeholder: 'Type name...',
                           value: userAnswers[index] || '',
-                          onChange: function(e) { return handleInputChange(index, e.target.value); },
+                          onChange: function(e) { return handleInputChange(index, e.target.value); }, // Changed to ES5 function
                           className: 'w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-center text-gray-800'
                         })
                       );
@@ -616,12 +662,29 @@
             const shareUrl = window.location.origin;
 
             try {
-              if (navigator.share && navigator.canShare({ title: shareTitle, text: shareText, url: shareUrl })) {
-                await navigator.share({ title: shareTitle, text: shareText, url: shareUrl });
+              if (navigator.share && navigator.canShare({ title, text, url: shareUrl })) {
+                await navigator.share({ title, text, url: shareUrl });
                 console.log("Score shared via Web Share API");
               } else {
-                await navigator.clipboard.writeText(`${shareText} ${shareUrl}`);
-                alert("Link copied! Share it anywhere 🥳");
+                // Use document.execCommand('copy') for clipboard operations in iframes
+                const textArea = document.createElement("textarea");
+                textArea.value = `${shareText} ${shareUrl}`;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+
+                // Use a custom message box instead of alert()
+                const messageBox = document.createElement('div');
+                messageBox.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+                messageBox.innerHTML = `
+                  <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm text-center">
+                    <h3 class="text-xl font-bold text-green-600 mb-4">Link Copied! 🎉</h3>
+                    <p class="text-gray-700 mb-6">Share it anywhere!</p>
+                    <button onclick="this.parentElement.parentElement.remove()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full">OK</button>
+                  </div>
+                `;
+                document.body.appendChild(messageBox);
               }
             } catch (err) {
               console.error("Share failed:", err);
@@ -667,7 +730,7 @@
               React.createElement(
                 'div',
                 { className: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8' },
-                results.map(function(item, index) {
+                results.map(function(item, index) { // Changed to ES5 function
                   return React.createElement(
                     'div',
                     {
@@ -700,7 +763,7 @@
                 React.createElement(
                   'button',
                   {
-                    onClick: function() { return navigateTo('game', { level: level }); },
+                    onClick: function() { return navigateTo('game', { level: level }); }, // Changed to ES5 function
                     className: 'bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300'
                   },
                   'Play Level Again'
@@ -708,7 +771,7 @@
                 React.createElement(
                   'button',
                   {
-                    onClick: function() { return navigateTo('levelSelection'); },
+                    onClick: function() { return navigateTo('levelSelection'); }, // Changed to ES5 function
                     className: 'bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-gray-300'
                   },
                   'Back to Levels'
@@ -729,5 +792,292 @@
         const UserDashboard = () => {
           const { currentUser, userProgress, navigateTo } = useContext(AppContext);
 
-          const totalLevelsCompleted = Object.values(userProgress).filter(function(p) { return p.completed; }).length;
-          const totalAttempts = Object.values(userProgress).reduce(function(sum, p) { return sum + p
+          const totalLevelsCompleted = Object.values(userProgress).filter(function(p) { return p.completed; }).length; // Changed to ES5 function
+          const totalAttempts = Object.values(userProgress).reduce(function(sum, p) { return sum + p.attempts; }, 0); // Changed to ES5 function
+          const totalScore = Object.values(userProgress).reduce(function(sum, p) { return sum + p.totalScore; }, 0); // Changed to ES5 function
+
+          const progressData = LEVELS.map(function(level) { // Changed to ES5 function
+            const progress = userProgress[level.id];
+            return {
+              levelName: level.name,
+              score: progress ? progress.bestScore : 0,
+              total: level.numberOfNames,
+              accuracy: progress ? (progress.bestScore / level.numberOfNames) * 100 : 0,
+            };
+          });
+
+          const recentActivity = Object.entries(userProgress)
+            .map(function(entry) { // Changed to ES5 function
+              var levelId = entry[0];
+              var progress = entry[1];
+              return {
+              level: LEVELS.find(function(l) { return l.id === levelId; }) ? LEVELS.find(function(l) { return l.id === levelId; }).name : levelId, // Changed to ES5 function and optional chaining
+              score: progress.bestScore,
+              total: LEVELS.find(function(l) { return l.id === levelId; }) ? LEVELS.find(function(l) { return l.id === levelId; }).numberOfNames : 0, // Changed to ES5 function and optional chaining
+              date: progress.lastPlayedAt ? new Date(progress.lastPlayedAt).toLocaleString() : 'N/A',
+            };
+            })
+            .sort(function(a, b) { return new Date(b.date) - new Date(a.date); }) // Changed to ES5 function
+            .slice(0, 5);
+
+          const personalBests = Object.entries(userProgress)
+            .filter(function(entry) { // Changed to ES5 function
+                var progress = entry[1];
+                return progress.bestScore > 0;
+            })
+            .map(function(entry) { // Changed to ES5 function
+                var levelId = entry[0];
+                var progress = entry[1];
+                return {
+                  level: LEVELS.find(function(l) { return l.id === levelId; }) ? LEVELS.find(function(l) { return l.id === levelId; }).name : levelId, // Changed to ES5 function and optional chaining
+                  bestScore: progress.bestScore,
+                  bestTime: progress.bestTime === Infinity ? 'N/A' : `${progress.bestTime}s`,
+                };
+            })
+            .sort(function(a, b) { return b.bestScore - a.bestScore; }); // Changed to ES5 function
+
+          return React.createElement(
+            'div',
+            { className: 'flex flex-col items-center min-h-[calc(100vh-160px)] bg-gray-100 p-6 rounded-lg shadow-xl' },
+            React.createElement(
+              'div',
+              { className: 'w-full max-w-5xl bg-white rounded-lg shadow-lg p-8' },
+              React.createElement(
+                'h1',
+                { className: 'text-4xl font-bold text-blue-800 mb-8 text-center' },
+                'Welcome Back, ',
+                currentUser.name,
+                '!'
+              ),
+              React.createElement(
+                'div',
+                { className: 'grid grid-cols-1 md:grid-cols-3 gap-6 mb-10 text-center' },
+                React.createElement(
+                  'div',
+                  { className: 'bg-blue-50 p-6 rounded-lg shadow-sm border-b-4 border-blue-400' },
+                  React.createElement('p', { className: 'text-blue-700 text-lg font-semibold' }, 'Levels Completed'),
+                  React.createElement('p', { className: 'text-4xl font-extrabold text-blue-800' }, totalLevelsCompleted, '/', LEVELS.length)
+                ),
+                React.createElement(
+                  'div',
+                  { className: 'bg-green-50 p-6 rounded-lg shadow-sm border-b-4 border-green-400' },
+                  React.createElement('p', { className: 'text-green-700 text-lg font-semibold' }, 'Total Attempts'),
+                  React.createElement('p', { className: 'text-4xl font-extrabold text-green-800' }, totalAttempts)
+                ),
+                React.createElement(
+                  'div',
+                  { className: 'bg-purple-50 p-6 rounded-lg shadow-sm border-b-4 border-purple-400' },
+                  React.createElement('p', { className: 'text-purple-700 text-lg font-semibold' }, 'Total Score'),
+                  React.createElement('p', { className: 'text-4xl font-extrabold text-purple-800' }, totalScore)
+                )
+              ),
+              React.createElement(
+                'div',
+                { className: 'grid grid-cols-1 lg:grid-cols-2 gap-8' },
+                React.createElement(
+                  'div',
+                  { className: 'bg-gray-50 p-6 rounded-lg shadow-md' },
+                  React.createElement('h2', { className: 'text-2xl font-semibold text-gray-800 mb-4' }, 'Your Progress'),
+                  React.createElement(
+                    'div',
+                    { className: 'space-y-3' },
+                    progressData.map(function(data, index) { // Changed to ES5 function
+                      return React.createElement(
+                        'div',
+                        { key: index, className: 'flex items-center space-x-4' },
+                        React.createElement('span', { className: 'font-medium text-gray-700 w-24' }, data.levelName, ':'),
+                        React.createElement(
+                          'div',
+                          { className: 'flex-1 bg-gray-200 rounded-full h-4' },
+                          React.createElement('div', {
+                            className: 'bg-blue-500 h-4 rounded-full transition-all duration-500',
+                            style: { width: `${data.accuracy}%` }
+                          })
+                        ),
+                        React.createElement('span', { className: 'text-gray-600 w-12 text-right' }, data.accuracy.toFixed(0), '%')
+                      );
+                    })
+                  )
+                ),
+                React.createElement(
+                  'div',
+                  { className: 'bg-gray-50 p-6 rounded-lg shadow-md' },
+                  React.createElement('h2', { className: 'text-2xl font-semibold text-gray-800 mb-4' }, 'Recent Activity'),
+                  recentActivity.length > 0 ? (
+                    React.createElement(
+                      'ul',
+                      { className: 'space-y-3' },
+                      recentActivity.map(function(activity, index) { // Changed to ES5 function
+                        return React.createElement(
+                          'li',
+                          { key: index, className: 'flex justify-between items-center text-gray-700 p-2 bg-white rounded-md shadow-sm' },
+                          React.createElement('span', null, activity.level, ' - Score: ', activity.score, '/', activity.total),
+                          React.createElement('span', { className: 'text-sm text-gray-500' }, activity.date)
+                        );
+                      })
+                    )
+                  ) : (
+                    React.createElement('p', { className: 'text-gray-500 italic' }, 'No recent activity. Start playing!')
+                  )
+                ),
+                React.createElement(
+                  'div',
+                  { className: 'lg:col-span-2 bg-gray-50 p-6 rounded-lg shadow-md' },
+                  React.createElement('h2', { className: 'text-2xl font-semibold text-gray-800 mb-4' }, 'Personal Bests'),
+                  personalBests.length > 0 ? (
+                    React.createElement(
+                      'div',
+                      { className: 'overflow-x-auto' },
+                      React.createElement(
+                        'table',
+                        { className: 'min-w-full bg-white rounded-lg shadow-sm' },
+                        React.createElement(
+                          'thead',
+                          null,
+                          React.createElement(
+                            'tr',
+                            { className: 'bg-gray-200 text-gray-700 uppercase text-sm leading-normal' },
+                            React.createElement('th', { className: 'py-3 px-6 text-left rounded-tl-lg' }, 'Level'),
+                            React.createElement('th', { className: 'py-3 px-6 text-left' }, 'Best Score'),
+                            React.createElement('th', { className: 'py-3 px-6 text-left rounded-tr-lg' }, 'Best Time')
+                          )
+                        )
+                        ,
+                        React.createElement(
+                          'tbody',
+                          { className: 'text-gray-600 text-sm font-light' },
+                          personalBests.map(function(best, index) { // Changed to ES5 function
+                            return React.createElement(
+                              'tr',
+                              { key: index, className: 'border-b border-gray-200 hover:bg-gray-100' },
+                              React.createElement('td', { className: 'py-3 px-6 text-left whitespace-nowrap' }, best.level),
+                              React.createElement('td', { className: 'py-3 px-6 text-left' }, best.bestScore),
+                              React.createElement('td', { className: 'py-3 px-6 text-left' }, best.bestTime)
+                            );
+                          })
+                        )
+                      )
+                    )
+                  ) : (
+                    React.createElement('p', { className: 'text-gray-500 italic' }, 'No personal bests yet. Keep playing to set new records!')
+                  )
+                )
+              ),
+              React.createElement(
+                'div',
+                { className: 'flex justify-center space-x-4 mt-10' },
+                React.createElement(
+                  'button',
+                  {
+                    onClick: function() { return navigateTo('levelSelection'); }, // Changed to ES5 function
+                    className: 'bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-300'
+                  },
+                  'Play New Challenge'
+                ),
+                React.createElement(
+                  'button',
+                  {
+                    onClick: function() { return navigateTo('home'); }, // Changed to ES5 function
+                    className: 'bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300'
+                  },
+                  'Edit Profile (Placeholder)'
+                ),
+                React.createElement(
+                  'button',
+                  {
+                    onClick: function() {
+                        const messageBox = document.createElement('div');
+                        messageBox.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+                        messageBox.innerHTML = `
+                          <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm text-center">
+                            <h3 class="text-xl font-bold text-blue-600 mb-4">Coming Soon!</h3>
+                            <p class="text-gray-700 mb-6">Leaderboard feature is under development.</p>
+                            <button onclick="this.parentElement.parentElement.remove()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full">OK</button>
+                          </div>
+                        `;
+                        document.body.appendChild(messageBox);
+                    },
+                    className: 'bg-purple-500 hover:bg-purple-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-purple-300'
+                  },
+                  'Leaderboard (Placeholder)'
+                )
+              )
+            )
+          );
+        };
+
+        const AppContent = () => {
+          const { currentPage, navigateTo, currentUser, supabaseReady, userLoggedIn } = useContext(AppContext);
+
+          // Render a loading state or a message if Supabase is not ready
+          if (!supabaseReady) {
+            return React.createElement('div', { className: 'text-center text-lg mt-10' }, 'Initializing authentication...');
+          }
+
+          const renderPage = () => {
+            switch (currentPage) {
+              case 'home':
+                return React.createElement(HomePage, null);
+              case 'howItWorks':
+                return React.createElement(HowItWorksPage, null);
+              case 'levelSelection':
+                return React.createElement(LevelSelectionPage, null);
+              case 'game':
+                return React.createElement(GamePage, null);
+              case 'results':
+                return React.createElement(ResultsPage, null);
+              case 'dashboard':
+                return React.createElement(UserDashboard, null);
+              default:
+                return React.createElement(HomePage, null);
+            }
+          };
+
+          return React.createElement(
+            React.Fragment,
+            null,
+            userLoggedIn && React.createElement(Header, null),
+            React.createElement(
+              'main',
+              { className: 'flex-grow p-4' },
+              userLoggedIn ? renderPage() : React.createElement('div', { className: 'text-center text-lg mt-10' }, 'Please log in to continue. You will be redirected to the login page shortly.'),
+              !userLoggedIn && (
+                useEffect(() => {
+                  const redirectTimeout = setTimeout(() => {
+                    window.location.href = 'index.html'; // Redirect to login page after a delay
+                  }, 3000); // 3-second delay
+                  return () => clearTimeout(redirectTimeout);
+                }, [])
+              )
+            ),
+            userLoggedIn && React.createElement(Footer, null)
+          );
+        };
+
+        // Main App Component
+        const App = () => {
+          return React.createElement(
+            'div',
+            { className: 'min-h-screen bg-gray-200 font-sans antialiased flex flex-col' },
+            React.createElement(
+              AuthProvider,
+              null,
+              React.createElement(
+                AppProvider,
+                null,
+                React.createElement(AppContent, null)
+              )
+            )
+          );
+        };
+
+        // Render the App into the root div
+        const domNode = document.getElementById('root');
+        const root = ReactDOM.createRoot(domNode);
+        root.render(React.createElement(App, null));
+
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="auth.js"></script>
+</body>
+</html>
