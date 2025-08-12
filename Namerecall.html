@@ -178,16 +178,35 @@
           // Declare currentPage as a state variable
           const [currentPage, setCurrentPage] = useState('home');
 
+          // Initialize userProgress by immediately attempting to load from localStorage
           const [userProgress, setUserProgress] = useState(() => {
-            // Lazily initialize userProgress only after auth is ready and user is known
-            if (supabaseReady && userLoggedIn && currentUser.id !== 'guest') {
-                const savedProgress = localStorage.getItem(`nameRecallProgress_${currentUser.id}`);
-                return savedProgress ? JSON.parse(savedProgress) : {};
+            if (typeof window !== 'undefined') { // Check if window is defined (for SSR compatibility, though not strictly needed here)
+              const savedProgress = localStorage.getItem(`nameRecallProgress_${currentUser.id}`);
+              return savedProgress ? JSON.parse(savedProgress) : {};
             }
-            return {}; // Return empty object if not ready or guest
+            return {};
           });
 
-          // Effect to save progress to localStorage
+          // Effect to load progress when user logs in/out or supabase is ready
+          useEffect(() => {
+            if (supabaseReady) { // Only attempt to load/clear once Supabase is ready
+              if (userLoggedIn && currentUser.id !== 'guest') {
+                const savedProgress = localStorage.getItem(`nameRecallProgress_${currentUser.id}`);
+                try {
+                  setUserProgress(savedProgress ? JSON.parse(savedProgress) : {});
+                } catch (e) {
+                  console.error("Failed to parse user progress from localStorage", e);
+                  setUserProgress({}); // Reset if corrupted
+                }
+              } else {
+                // If not logged in (or guest), ensure progress is cleared
+                setUserProgress({});
+                localStorage.removeItem(`nameRecallProgress_${currentUser.id}`); // Clear from localStorage too
+              }
+            }
+          }, [currentUser.id, userLoggedIn, supabaseReady]); // Dependencies: re-run when these change
+
+          // Effect to save progress to localStorage whenever userProgress changes
           useEffect(() => {
             if (supabaseReady && userLoggedIn && currentUser.id !== 'guest') {
                 localStorage.setItem(`nameRecallProgress_${currentUser.id}`, JSON.stringify(userProgress));
@@ -217,17 +236,12 @@
                 completed: false,
               };
 
-              // Create a new object for newProgress to avoid spread syntax
-              const newProgress = {};
-              for (var key in prevProgress) {
-                  if (prevProgress.hasOwnProperty(key)) {
-                      newProgress[key] = prevProgress[key];
-                  }
-              }
+              // Create a new object for newProgress to avoid direct mutation
+              const newProgress = { ...prevProgress };
 
               const completed = score === totalNames;
               const newBestScore = Math.max(currentLevelProgress.bestScore, score);
-              const newBestTime = (score > currentLevelProgress.bestScore || (score === currentLevelProgress.bestScore && timeTaken < currentLevel.bestTime)) ? timeTaken : currentLevelProgress.bestTime;
+              const newBestTime = (score > currentLevelProgress.bestScore || (score === currentLevelProgress.bestScore && timeTaken < currentLevelProgress.bestTime)) ? timeTaken : currentLevelProgress.bestTime;
               const newAttempts = currentLevelProgress.attempts + 1;
               const newTotalScore = currentLevelProgress.totalScore + score;
               
@@ -679,42 +693,7 @@
 
           const incorrectCount = totalNames - score;
 
-          const handleShare = async () => {
-            const shareTitle = `I scored ${score}/${totalNames} in "${level.name}"!`;
-            const shareText = `Think you can beat me? 🧠💥 Join the NameRecall Challenge — the brain-training game trusted by 12,000+ players.`;
-            const shareUrl = window.location.origin;
-
-            try {
-              if (navigator.share && navigator.canShare({ title, text, url: shareUrl })) {
-                await navigator.share({ title, text, url: shareUrl });
-                console.log("Score shared via Web Share API");
-              } else {
-                // Use document.execCommand('copy') for clipboard operations in iframes
-                const textArea = document.createElement("textarea");
-                textArea.value = `${shareText} ${shareUrl}`;
-                document.body.appendChild(textArea);
-                textArea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textArea);
-
-                // Use a custom message box instead of alert()
-                const messageBox = document.createElement('div');
-                messageBox.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-                messageBox.innerHTML = `
-                  <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm text-center">
-                    <h3 class="text-xl font-bold text-green-600 mb-4">Link Copied! 🎉</h3>
-                    <p class="text-gray-700 mb-6">Share it anywhere!</p>
-                    <button onclick="this.parentElement.parentElement.remove()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full">OK</button>
-                  </div>
-                `;
-                document.body.appendChild(messageBox);
-              }
-            } catch (err) {
-              console.error("Share failed:", err);
-              const twitter = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
-              window.open(twitter, "_blank", "noopener,noreferrer");
-            }
-          };
+          // Removed the handleShare function entirely
 
           return React.createElement(
             'div',
@@ -799,13 +778,13 @@
                   },
                   'Back to Levels'
                 ),
-                React.createElement(
+                React.createElement( // Added View Dashboard button
                   'button',
                   {
-                    onClick: handleShare,
-                    className: 'bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-orange-300'
+                    onClick: function() { return navigateTo('dashboard'); },
+                    className: 'bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-purple-300'
                   },
-                  'Share My Score 🔗'
+                  'View Dashboard'
                 )
               )
             )
@@ -1000,29 +979,10 @@
                 React.createElement(
                   'button',
                   {
-                    onClick: function() { return navigateTo('home'); }, // Changed to ES5 function
+                    onClick: function() { return navigateTo('home'); }, // Navigates to the Dashboard
                     className: 'bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300'
                   },
-                  'Edit Profile (Placeholder)'
-                ),
-                React.createElement(
-                  'button',
-                  {
-                    onClick: function() {
-                        const messageBox = document.createElement('div');
-                        messageBox.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-                        messageBox.innerHTML = `
-                          <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm text-center">
-                            <h3 class="text-xl font-bold text-blue-600 mb-4">Coming Soon!</h3>
-                            <p class="text-gray-700 mb-6">Leaderboard feature is under development.</p>
-                            <button onclick="this.parentElement.parentElement.remove()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full">OK</button>
-                          </div>
-                        `;
-                        document.body.appendChild(messageBox);
-                    },
-                    className: 'bg-purple-500 hover:bg-purple-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-purple-300'
-                  },
-                  'Leaderboard (Placeholder)'
+                  'Go Home' // Changed to "Go Home"
                 )
               )
             )
@@ -1064,7 +1024,6 @@
               'main',
               { className: 'flex-grow p-4' },
               // Display content if logged in, otherwise show a login message.
-              // Removed the automatic redirect, allowing the user to stay on this page.
               userLoggedIn ? renderPage() : React.createElement('div', { className: 'text-center text-lg mt-10' }, 'Please log in to continue. Navigate back to the login page to sign in.')
             ),
             userLoggedIn && React.createElement(Footer, null)
