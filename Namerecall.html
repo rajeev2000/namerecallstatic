@@ -35,22 +35,23 @@
 
         // --- Data Simulation ---
         const PEOPLE_DATA = [
-              { id: 1, name: 'Alice', imageUrl: './assets/alice.png' },
-              { id: 2, name: 'Bob', imageUrl: './assets/bob.png' },
-              { id: 3, name: 'Charlie', imageUrl: './assets/charlie.png' },
-              { id: 4, name: 'Diana', imageUrl: './assets/diana.png' },
-              { id: 5, name: 'Eve', imageUrl: './assets/eve.png' },
-              { id: 6, name: 'Frank', imageUrl: './assets/frank.png' },
-              { id: 7, name: 'Grace', imageUrl: './assets/grace.png' },
-              { id: 8, name: 'Heidi', imageUrl: './assets/heidi.png' },
-              { id: 9, name: 'Ivan', imageUrl: './assets/ivan.png' },
-              { id: 10, name: 'Judy', imageUrl: './assets/judy.png' },
-              { id: 11, name: 'Kevin', imageUrl: './assets/kevin.png' },
-              { id: 12, name: 'Linda', imageUrl: './assets/linda.png' },
-              { id: 13, name: 'Mike', imageUrl: './assets/mike.png' },
-              { id: 14, name: 'Nora', imageUrl: './assets/nora.png' },
-              { id: 15, name: 'Oscar', imageUrl: './assets/oscar.png' },
-            ];
+          { id: 1, name: 'Alice', imageUrl :'./asset/Alice.png' },
+          { id: 2, name: 'Bob', imageUrl: './asset/Bob.png' },
+          { id: 3, name: 'Charlie', imageUrl: './Charlie.png' },
+          { id: 4, name: 'Diana', imageUrl: './asset/Diana.png' },
+          { id: 5, name: 'Eve', imageUrl: './asset/Eve.png' },
+          { id: 6, name: 'Frank', imageUrl: './asset/Frank.png' },
+          { id: 7, name: 'Grace', imageUrl: './asset/Grace.png' },
+          { id: 8, name: 'Heidi', imageUrl: './asset/Heidi.png' },
+          { id: 9, name: 'Ivan', imageUrl: './asset/Ivan.png' },
+          { id: 10, name: 'Judy', imageUrl: './asset/Judy.png' },
+          { id: 11, name: 'Kevin', imageUrl: './asset/Kevin.png' },
+          { id: 12, name: 'Linda', imageUrl: './asset/Linda.png' },
+          { id: 13, name: 'Mike', imageUrl: './asset/Mike.png' },
+          { id: 14, name: 'Nora', imageUrl: './asset/Nora.png' },
+          { id: 15, name: 'Oscar', imageUrl: './asset/Oscar.png' },
+        ];
+
         const LEVELS = [
           { id: 'level-4', name: '4 Names', numberOfNames: 4, presentationTime: 2000, recallTime: 30, detailHint: false },
           { id: 'level-5', name: '5 Names', numberOfNames: 5, presentationTime: 1800, recallTime: 35, detailHint: false },
@@ -254,32 +255,55 @@
         const Header = () => {
           const { navigateTo, currentUser } = useContext(AppContext);
           const { logout } = useContext(AuthContext);
+          const [isMenuOpen, setIsMenuOpen] = useState(false); // State for mobile menu
 
           return React.createElement(
             'header',
             { className: 'bg-blue-800 text-white p-4 shadow-lg rounded-b-lg' },
             React.createElement(
               'nav',
-              { className: 'container mx-auto flex justify-between items-center' },
+              { className: 'container mx-auto flex justify-between items-center flex-wrap' }, // Added flex-wrap
               React.createElement(
                 'div',
                 { className: 'flex items-center space-x-4 cursor-pointer', onClick: () => navigateTo('home') },
                 React.createElement('img', { src: 'namerecall.jpeg', alt: 'NameRecall Logo', className: 'h-10 w-10 object-contain rounded-full' }),
                 React.createElement('div', { className: 'text-2xl font-bold' }, 'NameRecall Challenge')
               ),
+              // Mobile menu button
+              React.createElement(
+                'button',
+                {
+                  onClick: () => setIsMenuOpen(!isMenuOpen),
+                  className: 'md:hidden text-white focus:outline-none focus:ring-2 focus:ring-blue-300 rounded-md p-2'
+                },
+                React.createElement('svg', {
+                  className: 'w-6 h-6',
+                  fill: 'none',
+                  stroke: 'currentColor',
+                  viewBox: '0 0 24 24',
+                  xmlns: 'http://www.w3.org/2000/svg'
+                },
+                React.createElement('path', {
+                  strokeLinecap: 'round',
+                  strokeLinejoin: 'round',
+                  strokeWidth: '2',
+                  d: isMenuOpen ? 'M6 18L18 6M6 6l12 12' : 'M4 6h16M4 12h16M4 18h16'
+                }))
+              ),
+              // Navigation links (hidden on mobile by default, shown when menu is open)
               React.createElement(
                 'ul',
-                { className: 'flex space-x-6' },
-                React.createElement('li', null, React.createElement('button', { onClick: () => navigateTo('home'), className: 'hover:text-blue-200 transition-colors' }, 'Home')),
-                React.createElement('li', null, React.createElement('button', { onClick: () => navigateTo('howItWorks'), className: 'hover:text-blue-200 transition-colors' }, 'How It Works')),
-                React.createElement('li', null, React.createElement('button', { onClick: () => navigateTo('levelSelection'), className: 'hover:text-blue-200 transition-colors' }, 'Play')),
-                React.createElement('li', null, React.createElement('button', { onClick: () => navigateTo('dashboard'), className: 'hover:text-blue-200 transition-colors' }, 'Dashboard')),
+                { className: `md:flex md:space-x-6 w-full md:w-auto mt-4 md:mt-0 ${isMenuOpen ? 'block' : 'hidden'}` },
+                React.createElement('li', null, React.createElement('button', { onClick: () => { navigateTo('home'); setIsMenuOpen(false); }, className: 'block py-2 px-4 hover:text-blue-200 transition-colors md:inline-block' }, 'Home')),
+                React.createElement('li', null, React.createElement('button', { onClick: () => { navigateTo('howItWorks'); setIsMenuOpen(false); }, className: 'block py-2 px-4 hover:text-blue-200 transition-colors md:inline-block' }, 'How It Works')),
+                React.createElement('li', null, React.createElement('button', { onClick: () => { navigateTo('levelSelection'); setIsMenuOpen(false); }, className: 'block py-2 px-4 hover:text-blue-200 transition-colors md:inline-block' }, 'Play')),
+                React.createElement('li', null, React.createElement('button', { onClick: () => { navigateTo('dashboard'); setIsMenuOpen(false); }, className: 'block py-2 px-4 hover:text-blue-200 transition-colors md:inline-block' }, 'Dashboard')),
                 React.createElement(
                   'li',
-                  { className: 'flex items-center space-x-2' },
+                  { className: 'flex items-center space-x-2 mt-2 md:mt-0 md:ml-4' },
                   React.createElement('span', { className: 'text-blue-200' }, 'Hello, ', currentUser.name, '!'),
                   currentUser.id !== 'guest' && (
-                    React.createElement('button', { onClick: logout, className: 'text-sm bg-red-500 hover:bg-red-600 px-3 py-1 rounded-full transition-colors' }, 'Logout')
+                    React.createElement('button', { onClick: () => { logout(); setIsMenuOpen(false); }, className: 'text-sm bg-red-500 hover:bg-red-600 px-3 py-1 rounded-full transition-colors' }, 'Logout')
                   )
                 )
               )
@@ -598,7 +622,7 @@
                   React.createElement('img', {
                     src: currentPerson.imageUrl,
                     alt: currentPerson.name,
-                    className: 'w-40 h-40 rounded-full object-cover mb-4 shadow-md border-4 border-blue-300' // Added image and styling
+                    className: 'w-32 h-32 md:w-40 md:h-40 rounded-full object-cover mb-4 shadow-md border-4 border-blue-300' // Added responsive sizing
                   }),
                   React.createElement('h2', { className: 'text-4xl font-bold text-blue-700 mb-2' }, currentPerson.name),
                   level.detailHint && currentPerson.detail && (
@@ -618,10 +642,10 @@
                       return React.createElement(
                         'div',
                         { key: person.id, className: 'flex flex-col items-center' },
-                        React.createElement('img', { // Added image to recall phase
+                        React.createElement('img', { // Added responsive sizing to recall phase
                           src: person.imageUrl,
                           alt: 'Recall Image',
-                          className: 'w-24 h-24 rounded-full object-cover mb-3 border-2 border-gray-300'
+                          className: 'w-20 h-20 md:w-24 md:h-24 rounded-full object-cover mb-3 border-2 border-gray-300'
                         }),
                         React.createElement('input', {
                           type: 'text',
@@ -1039,8 +1063,9 @@
             React.createElement(
               'main',
               { className: 'flex-grow p-4' },
-              // Removed the conditional redirect logic
-              userLoggedIn ? renderPage() : React.createElement('div', { className: 'text-center text-lg mt-10' }, 'Please log in to continue. You will be redirected to the login page shortly.')
+              // Display content if logged in, otherwise show a login message.
+              // Removed the automatic redirect, allowing the user to stay on this page.
+              userLoggedIn ? renderPage() : React.createElement('div', { className: 'text-center text-lg mt-10' }, 'Please log in to continue. Navigate back to the login page to sign in.')
             ),
             userLoggedIn && React.createElement(Footer, null)
           );
