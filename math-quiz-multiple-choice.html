@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Sprint Challenge</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Theme Toggle -->
+    <div class="theme-toggle">
+        <button id="theme-toggle-btn" class="theme-toggle-btn" aria-label="Toggle dark/light theme">
+            <div class="toggle-slider">
+                <span class="toggle-icon sun-icon">☀️</span>
+                <span class="toggle-icon moon-icon">🌙</span>
+            </div>
+        </button>
+    </div>
+
+    <!-- Animated Background Elements -->
+    <div class="background-elements">
+        <div class="floating-shape shape-1"></div>
+        <div class="floating-shape shape-2"></div>
+        <div class="floating-shape shape-3"></div>
+        <div class="floating-shape shape-4"></div>
+    </div>
+
+    <!-- Welcome Screen -->
+    <div id="welcome-screen" class="screen active">
+        <div class="container">
+            <div class="welcome-content">
+                <h1 class="game-title">
+                    <span class="title-word">Math</span>
+                    <span class="title-word">Sprint</span>
+                    <span class="title-word accent-word">Challenge</span>
+                </h1>
+                <div class="subtitle">Test your addition skills in 60 seconds!</div>
+                
+                <div class="game-info">
+                    <div class="info-item">
+                        <div class="info-number">30</div>
+                        <div class="info-label">Questions</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-number">2s</div>
+                        <div class="info-label">Per Question</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-number">60s</div>
+                        <div class="info-label">Total Time</div>
+                    </div>
+                </div>
+
+                <div class="best-score-display">
+                    <div class="best-score-label">Best Score</div>
+                    <div id="best-score-value" class="best-score-value">0</div>
+                </div>
+
+                <button id="start-btn" class="btn btn--primary btn--large">
+                    <span class="btn-text">Start Game</span>
+                    <div class="btn-ripple"></div>
+                </button>
+
+                <div class="instructions">
+                    <p>Solve single-digit addition problems as quickly as possible!</p>
+                    <p><strong>AUTO-EVALUATION:</strong> Click your answer or wait 2 seconds for automatic checking.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="game-screen" class="screen">
+        <div class="container">
+            <div class="game-header">
+                <div class="game-stats">
+                    <div class="stat-item">
+                        <div class="stat-value" id="current-score">0</div>
+                        <div class="stat-label">Score</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="question-counter">1/30</div>
+                        <div class="stat-label">Question</div>
+                    </div>
+                </div>
+                
+                <div class="timer-container">
+                    <div class="timer-bg">
+                        <div id="timer-progress" class="timer-progress"></div>
+                    </div>
+                    <div id="timer-text" class="timer-text">2.0s</div>
+                </div>
+            </div>
+
+            <div class="game-content">
+                <div id="question-display" class="question-display">
+                    <span class="number" id="num1">5</span>
+                    <span class="operator">+</span>
+                    <span class="number" id="num2">3</span>
+                    <span class="equals">=</span>
+                    <span class="question-mark">?</span>
+                </div>
+
+                <div class="answer-section">
+                    <div class="multiple-choice-options" id="multiple-choice-options">
+                        <button class="option-btn" data-value="0">0</button>
+                        <button class="option-btn" data-value="1">1</button>
+                        <button class="option-btn" data-value="2">2</button>
+                        <button class="option-btn" data-value="3">3</button>
+                    </div>
+                    <div class="auto-eval-hint">Answer will be checked automatically in <span id="countdown-text">2.0</span>s</div>
+                </div>
+
+                <div id="feedback" class="feedback hidden">
+                    <div class="feedback-icon"></div>
+                    <div class="feedback-text"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Screen -->
+    <div id="results-screen" class="screen">
+        <div class="container">
+            <div class="results-content">
+                <div class="results-header">
+                    <h2 class="results-title">Game Complete!</h2>
+                    <div class="celebration-icon">🎉</div>
+                </div>
+
+                <div class="score-display">
+                    <div class="final-score">
+                        <div class="score-label">Your Score</div>
+                        <div id="final-score-value" class="score-value">0</div>
+                        <div class="score-max">out of 30</div>
+                    </div>
+                    
+                    <div class="accuracy-display">
+                        <div class="accuracy-label">Accuracy</div>
+                        <div id="accuracy-value" class="accuracy-value">0%</div>
+                    </div>
+                </div>
+
+                <div id="performance-rating" class="performance-rating">
+                    <div class="rating-text">Excellent! You're a math genius!</div>
+                </div>
+
+                <div class="score-comparison">
+                    <div class="comparison-item">
+                        <div class="comparison-label">Previous Best</div>
+                        <div id="previous-best" class="comparison-value">0</div>
+                    </div>
+                    <div class="comparison-item">
+                        <div class="comparison-label">This Game</div>
+                        <div id="current-game-score" class="comparison-value">0</div>
+                    </div>
+                </div>
+
+                <!-- Mistakes Review Section -->
+                <div id="mistakes-review" class="mistakes-review">
+                    <h3 class="mistakes-title">Review Your Mistakes</h3>
+                    <div id="mistakes-list" class="mistakes-list">
+                        <!-- Mistakes will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <div class="results-actions">
+                    <button id="play-again-btn" class="btn btn--primary btn--large">
+                        <span class="btn-text">Play Again</span>
+                        <div class="btn-ripple"></div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

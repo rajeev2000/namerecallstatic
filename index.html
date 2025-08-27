@@ -38,6 +38,13 @@
     .google-icon {
       filter: drop-shadow(0 1px 1px rgba(0,0,0,0.1)); /* Small shadow for icon */
     }
+    .play-btn {
+        transition: all 0.2s ease-in-out;
+    }
+    .play-btn:hover {
+        box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+        transform: translateY(-2px);
+    }
   </style>
 </head>
 <body>
@@ -64,6 +71,18 @@
           You'll be redirected to the app after signing in.
         </p>
       </div>
+
+      <!-- New Math Quiz Section -->
+      <div class="p-6 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl shadow-inner border border-purple-200">
+        <h3 class="text-2xl font-bold text-purple-800 mb-4">New Game Available!</h3>
+        <p class="text-gray-700 mb-6">
+          Test your calculation skills with our new Multiple Choice Math Quiz.
+        </p>
+        <a href="math-quiz-multiple-choice.html" class="play-btn inline-block w-full px-6 py-3 rounded-full shadow-lg text-lg font-semibold text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-4 focus:ring-purple-300 focus:ring-opacity-50">
+          Play Math Quiz Now
+        </a>
+      </div>
+      <!-- End of New Math Quiz Section -->
 
       <div class="p-6 bg-gradient-to-br from-green-50 to-white/90 rounded-xl shadow-inner border border-green-200">
         <h3 class="text-xl font-bold text-green-800 mb-3">Why NameRecall?</h3>
