@@ -3,13 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Math Sprint Challenge</title>
+    <title>Math Sprint Challenge: The Ultimate 60-Second Addition Quiz | NameRecall</title>
+    <meta name="description" content="Put your addition skills to the test in this thrilling 60-second Math Sprint Challenge! How many problems can you solve before time runs out? Perfect for boosting brain speed and math fluency. Play now!">
+    <meta name="keywords" content="math quiz, math games, speed math, addition game, 60-second challenge, brain training, math sprint, quick math, mental math, fun math games, educational games">
     <link rel="stylesheet" href="style.css">
+    <!-- Structured Data for SEO -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Quiz",
+      "name": "Math Sprint Challenge",
+      "description": "A fast-paced, 60-second addition quiz designed to test and improve your calculation speed and mental math skills.",
+      "timeRequired": "PT1M",
+      "educationalLevel": "Beginner to Intermediate",
+      "learningResourceType": "Quiz",
+      "provider": {
+        "@type": "Organization",
+        "name": "NameRecall"
+      }
+    }
+    </script>
 </head>
 <body>
     <!-- Theme Toggle -->
     <div class="theme-toggle">
-        <button id="theme-toggle-btn" class="theme-toggle-btn" aria-label="Toggle dark/light theme">
+        <button id="theme-toggle-btn" class="theme-toggle-btn" aria-label="Toggle dark and light theme">
             <div class="toggle-slider">
                 <span class="toggle-icon sun-icon">☀️</span>
                 <span class="toggle-icon moon-icon">🌙</span>
@@ -56,7 +74,7 @@
                     <div id="best-score-value" class="best-score-value">0</div>
                 </div>
 
-                <button id="start-btn" class="btn btn--primary btn--large">
+                <button id="start-btn" class="btn btn--primary btn--large" aria-label="Start the Math Sprint Challenge game">
                     <span class="btn-text">Start Game</span>
                     <div class="btn-ripple"></div>
                 </button>
